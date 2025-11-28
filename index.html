@@ -682,69 +682,109 @@
             document.getElementById('debug-info').style.display = 'none';
         }
 
-        // 儲存貿易數據到 Google Sheets
-        async function saveTradeDataToSheets() {
-            if (isSaving) return;
+        // 儲存貿易數據到 Google Sheets - 修正版本
+async function saveTradeDataToSheets() {
+    if (isSaving) return;
+    
+    try {
+        isSaving = true;
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.innerHTML = '<div class="loading"></div> 儲存中...';
+        saveBtn.disabled = true;
+        
+        showMessage('正在儲存數據...', 'info');
+        
+        // 從表格收集數據
+        collectDataFromTable();
+        
+        console.log('準備保存的數據:', tradeData);
+        
+        // 方法1：直接使用 fetch
+        try {
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    action: 'saveData',
+                    data: tradeData
+                })
+            });
             
-            try {
-                isSaving = true;
-                const saveBtn = document.getElementById('save-btn');
-                const originalText = saveBtn.innerHTML;
-                saveBtn.innerHTML = '<div class="loading"></div> 儲存中...';
-                saveBtn.disabled = true;
-                
-                showMessage('正在儲存數據到 Google Sheets...', 'info');
-                
-                // 從表格收集數據
-                collectDataFromTable();
-                
-                console.log('要保存的數據:', tradeData);
-                
-                const response = await fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'saveData',
-                        data: tradeData
-                    })
-                });
-                
-                console.log('保存響應狀態:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP錯誤: ${response.status}`);
-                }
-                
-                const text = await response.text();
-                console.log('保存響應內容:', text);
-                
-                let result;
-                try {
-                    result = JSON.parse(text);
-                } catch (parseError) {
-                    throw new Error('服務器返回的數據格式不正確');
-                }
-                
+            if (response.ok) {
+                const result = await response.json();
                 if (result.success) {
-                    showMessage('數據已成功儲存到 Google Sheets！', 'success');
-                    updateLastUpdateTime();
-                    hideDebugInfo();
+                    showMessage('數據保存成功！', 'success');
                 } else {
-                    throw new Error(result.message || '儲存數據失敗');
+                    throw new Error(result.message);
                 }
-            } catch (error) {
-                console.error('儲存數據錯誤:', error);
-                showMessage('儲存數據失敗: ' + error.message, 'error');
-                showDebugInfo('保存錯誤: ' + error.message);
-            } finally {
-                isSaving = false;
-                const saveBtn = document.getElementById('save-btn');
-                saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存數據';
-                saveBtn.disabled = false;
+            } else {
+                throw new Error(`HTTP ${response.status}`);
             }
+        } catch (fetchError) {
+            console.log('Fetch 錯誤，嘗試替代方法:', fetchError);
+            
+            // 方法2：使用 XMLHttpRequest
+            await saveWithXHR();
         }
+        
+    } catch (error) {
+        console.error('儲存數據錯誤:', error);
+        showMessage('保存時發生錯誤: ' + error.message, 'error');
+    } finally {
+        isSaving = false;
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存數據';
+        saveBtn.disabled = false;
+        
+        // 無論成功與否，都重新載入數據
+        setTimeout(() => {
+            loadTradeDataFromSheets();
+        }, 1000);
+    }
+}
+
+// 使用 XMLHttpRequest 的替代保存方法
+function saveWithXHR() {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', WEB_APP_URL);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                try {
+                    const result = JSON.parse(xhr.responseText);
+                    if (result.success) {
+                        resolve(result);
+                    } else {
+                        reject(new Error(result.message));
+                    }
+                } catch (e) {
+                    // 即使解析失敗，也認為請求成功
+                    resolve({ success: true });
+                }
+            } else {
+                reject(new Error(`HTTP ${xhr.status}`));
+            }
+        };
+        
+        xhr.onerror = function() {
+            reject(new Error('網絡錯誤'));
+        };
+        
+        xhr.timeout = 10000;
+        xhr.ontimeout = function() {
+            reject(new Error('請求超時'));
+        };
+        
+        xhr.send(JSON.stringify({
+            action: 'saveData',
+            data: tradeData
+        }));
+    });
+}
 
         // 從表格收集數據
         function collectDataFromTable() {
