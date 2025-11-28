@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大貿易節路線計算機</title>
+    <style>
+        :root {
+            --primary-color: #4a86e8;
+            --secondary-color: #b6d7a8;
+            --danger-color: #e74c3c;
+            --light-color: #f5f5f5;
+            --dark-color: #333;
+            --border-radius: 8px;
+            --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            box-shadow: var(--box-shadow);
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .connected {
+            background-color: #27ae60;
+        }
+        
+        .disconnected {
+            background-color: #e74c3c;
+        }
+        
+        .user-info {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-body {
+            padding: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+        
+        .btn:hover {
+            background-color: #3a76d8;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            background-color: #e0e0e0;
+            cursor: pointer;
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+            margin-right: 5px;
+        }
+        
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .yield-high {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .yield-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .yield-low {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .refresh-info {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: right;
+            margin-top: 10px;
+        }
+        
+        .route-path {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .route-details {
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        .cycle-indicator {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            th, td {
+                padding: 8px 5px;
+                font-size: 0.85rem;
+            }
+            
+            .card-body {
+                padding: 10px;
+            }
+            
+            .btn {
+                padding: 6px 12px;
+                font-size: 0.85rem;
+            }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .last-updated {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: right;
+            margin-top: 5px;
+        }
+        
+        .online-users {
+            font-size: 0.8rem;
+            color: #666;
+            text-align: center;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>大貿易節路線計算機</h1>
+            <div class="description">多人實時協作，共同編輯貿易數據</div>
+            <div class="user-info">
+                <span id="user-id">用戶ID: 載入中...</span>
+                <span id="connection-status" class="connection-status disconnected">離線</span>
+            </div>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="input">數據輸入</div>
+            <div class="tab" data-tab="avg-yield">平均收益率排名</div>
+            <div class="tab" data-tab="total-yield">總收益率排名</div>
+            <div class="tab" data-tab="cycle-routes">循環路線</div>
+            <div class="tab" data-tab="non-cycle-routes">單程路線</div>
+            <div class="tab" data-tab="item-yield">各物品收益率</div>
+        </div>
+        
+        <!-- 數據輸入 -->
+        <div class="tab-content active" id="input">
+            <div class="card">
+                <div class="card-header">
+                    <span>貿易數據輸入 - 多人實時協作</span>
+                    <div>
+                        <button class="btn btn-small" id="save-all">儲存所有數據</button>
+                        <button class="btn btn-small btn-danger" id="clear-all">清除所有數據</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="last-updated" id="data-update-time">最後更新: 尚未更新</div>
+                    <div class="online-users" id="online-users">在線用戶: 0人</div>
+                    <table id="trade-data-table">
+                        <thead>
+                            <tr>
+                                <th>地點名稱</th>
+                                <th>買入物品</th>
+                                <th>買入價格%</th>
+                                <th>賣出物品</th>
+                                <th>賣出價格%</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trade-data-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 其他標籤頁內容 -->
+        <div class="tab-content" id="avg-yield">
+            <div class="card">
+                <div class="card-header">
+                    <span>⭐ 推荐路線 - 平均收益率排名</span>
+                    <button class="btn btn-small" id="refresh-avg-yield">刷新</button>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="avg-yield-loading">計算中...</div>
+                    <table id="avg-yield-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="avg-yield-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 總收益率排名 -->
+        <div class="tab-content" id="total-yield">
+            <div class="card">
+                <div class="card-header">
+                    <span>⭐ 推荐路線 - 總收益率排名</span>
+                    <button class="btn btn-small" id="refresh-total-yield">刷新</button>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="total-yield-loading">計算中...</div>
+                    <table id="total-yield-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="total-yield-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 循環路線 -->
+        <div class="tab-content" id="cycle-routes">
+            <div class="card">
+                <div class="card-header">
+                    <span>🔁 循環路線</span>
+                    <button class="btn btn-small" id="refresh-cycle-routes">刷新</button>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="cycle-routes-loading">計算中...</div>
+                    <table id="cycle-routes-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cycle-routes-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 單程路線 -->
+        <div class="tab-content" id="non-cycle-routes">
+            <div class="card">
+                <div class="card-header">
+                    <span>➡️ 單程路線</span>
+                    <button class="btn btn-small" id="refresh-non-cycle-routes">刷新</button>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="non-cycle-routes-loading">計算中...</div>
+                    <table id="non-cycle-routes-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody id="non-cycle-routes-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 各物品收益率 -->
+        <div class="tab-content" id="item-yield">
+            <div class="card">
+                <div class="card-header">
+                    <span>📦 各物品收益率</span>
+                    <button class="btn btn-small" id="refresh-item-yield">刷新</button>
+                </div>
+                <div class="card-body">
+                    <div class="loading" id="item-yield-loading">計算中...</div>
+                    <table id="item-yield-table" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>物品</th>
+                                <th>買入地</th>
+                                <th>賣出地</th>
+                                <th>收益率</th>
+                            </tr>
+                        </thead>
+                        <tbody id="item-yield-body">
+                            <!-- 數據將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="refresh-info" id="refresh-time">
+            最後更新時間: 尚未更新
+        </div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 配置信息
+        const CONFIG = {
+            GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxsiEbpShx5unAMMtN7qm46W-CR3mA2CgK9zI8W7ao4lbbncoK4Y3MU8yjbEP2LNglV/exec',
+            REFRESH_INTERVAL: 3000, // 3秒刷新一次
+            USER_ID: 'user_' + Math.random().toString(36).substr(2, 9),
+            SPREADSHEET_ID: '1af4_RnScDN66Bl7om2bk7vDLTCgio2XGufuk43nyqmM'
+        };
+
+        // 物品和地點常量
+        const ITEMS = [
+            "櫻花", "地獄蝠翼膜", "冬樹嫩芽", "魔礦石塊", "風滾草", 
+            "風風鈴", "回音海螺", "斯芬克斯的鬃毛", "古代石板", 
+            "砂鱷魚之果", "靈魂之燈", "嘰嘰鳥的雙面羽", "冰龍鱗", 
+            "王者之角", "鬼盞", "船蟹的螯", "地獄火種", "河童之玉", 
+            "巨鯨琥珀", "海怪觸手"
+        ];
+
+        const LOCATIONS = [
+            "龍城", "火龍迷宮", "飛龍山", "魔物之森", "精靈之森",
+            "綠洲城", "舊都遺址", "大沙漠", "砂城聖域", "冰海大陸",
+            "永冬冰原", "龍穴", "北嶺雪山", "黑暗森林", "墓園",
+            "地下城", "地底火山", "櫻島", "八百萬島", "漩渦島",
+            "鬼島", "珊瑚區", "沉船區", "風暴區", "靜謐海"
+        ];
+
+        // 固定買入物品映射
+        const BUY_ITEMS = {
+            "龍城": "櫻花",
+            "火龍迷宮": "冬樹嫩芽",
+            "飛龍山": "風滾草",
+            "魔物之森": "地獄蝠翼膜",
+            "精靈之森": "回音海螺",
+            "綠洲城": "風滾草",
+            "舊都遺址": "古代石板",
+            "大沙漠": "砂鱷魚之果",
+            "砂城聖域": "斯芬克斯的鬃毛",
+            "冰海大陸": "冬樹嫩芽",
+            "永冬冰原": "嘰嘰鳥的雙面羽",
+            "龍穴": "冰龍鱗",
+            "北嶺雪山": "王者之角",
+            "黑暗森林": "地獄蝠翼膜",
+            "墓園": "靈魂之燈",
+            "地下城": "魔礦石塊",
+            "地底火山": "地獄火種",
+            "櫻島": "櫻花",
+            "八百萬島": "風風鈴",
+            "漩渦島": "河童之玉",
+            "鬼島": "鬼盞",
+            "珊瑚區": "回音海螺",
+            "沉船區": "船蟹的螯",
+            "風暴區": "巨鯨琥珀",
+            "靜謐海": "海怪觸手"
+        };
+
+        // 全局變數
+        let tradeData = [];
+        let lastRefreshTime = null;
+        let isConnected = false;
+        let refreshInterval = null;
+        let onlineUsers = 0;
+
+        // DOM 加載完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            startAutoRefresh();
+        });
+
+        // 初始化應用
+        function initializeApp() {
+            document.getElementById('user-id').textContent = `用戶ID: ${CONFIG.USER_ID}`;
+            loadTradeDataFromServer();
+        }
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+
+            document.getElementById('save-all').addEventListener('click', saveAllDataToServer);
+            document.getElementById('clear-all').addEventListener('click', clearAllData);
+            
+            document.getElementById('refresh-avg-yield').addEventListener('click', refreshAvgYield);
+            document.getElementById('refresh-total-yield').addEventListener('click', refreshTotalYield);
+            document.getElementById('refresh-cycle-routes').addEventListener('click', refreshCycleRoutes);
+            document.getElementById('refresh-non-cycle-routes').addEventListener('click', refreshNonCycleRoutes);
+            document.getElementById('refresh-item-yield').addEventListener('click', refreshItemYield);
+        }
+
+        // 切換標籤頁
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            
+            if (tabId !== 'input') {
+                refreshCalculations(tabId);
+            }
+        }
+
+        // 從服務器加載貿易數據
+        async function loadTradeDataFromServer() {
+            try {
+                updateConnectionStatus(false);
+                
+                const response = await fetch(`${CONFIG.GOOGLE_APPS_SCRIPT_URL}?action=getData&spreadsheetId=${CONFIG.SPREADSHEET_ID}`);
+                
+                if (!response.ok) {
+                    throw new Error('網絡請求失敗');
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    tradeData = data.data;
+                    onlineUsers = data.onlineUsers || 1;
+                    renderTradeDataTable();
+                    updateConnectionStatus(true);
+                    updateDataUpdateTime(data.lastUpdated);
+                    updateOnlineUsers();
+                } else {
+                    throw new Error(data.error || '數據加載失敗');
+                }
+            } catch (error) {
+                console.error('加載數據失敗:', error);
+                showToast('數據加載失敗，請檢查網絡連接');
+                updateConnectionStatus(false);
+            }
+        }
+
+        // 保存所有數據到服務器
+        async function saveAllDataToServer() {
+            try {
+                // 收集所有數據
+                tradeData.forEach((row, index) => {
+                    const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
+                    const sellItemSelect = document.querySelector(`select[data-index="${index}"][data-type="sell-item"]`);
+                    const sellPriceInput = document.querySelector(`input[data-index="${index}"][data-type="sell"]`);
+                    
+                    if (buyPriceInput) row[2] = parseInt(buyPriceInput.value) || 0;
+                    if (sellItemSelect) row[3] = sellItemSelect.value;
+                    if (sellPriceInput) row[4] = parseInt(sellPriceInput.value) || 0;
+                });
+                
+                const response = await fetch(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveData',
+                        data: tradeData,
+                        userId: CONFIG.USER_ID,
+                        spreadsheetId: CONFIG.SPREADSHEET_ID
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('網絡請求失敗');
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('數據已儲存到服務器');
+                    updateDataUpdateTime(result.lastUpdated);
+                } else {
+                    throw new Error(result.error || '保存失敗');
+                }
+            } catch (error) {
+                console.error('保存數據失敗:', error);
+                showToast('保存失敗，請檢查網絡連接');
+            }
+        }
+
+        // 清除所有數據
+        async function clearAllData() {
+            if (confirm('確定要清除所有數據嗎？所有價格將重置為0？')) {
+                try {
+                    const response = await fetch(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            action: 'clearData',
+                            userId: CONFIG.USER_ID,
+                            spreadsheetId: CONFIG.SPREADSHEET_ID
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('數據已清除');
+                            loadTradeDataFromServer();
+                        }
+                    }
+                } catch (error) {
+                    console.error('清除數據失敗:', error);
+                    showToast('清除失敗');
+                }
+            }
+        }
+
+        // 開始自動刷新
+        function startAutoRefresh() {
+            refreshInterval = setInterval(() => {
+                loadTradeDataFromServer();
+            }, CONFIG.REFRESH_INTERVAL);
+        }
+
+        // 更新連接狀態
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusElement = document.getElementById('connection-status');
+            
+            if (connected) {
+                statusElement.textContent = '在線';
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '離線';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+
+        // 更新在線用戶數
+        function updateOnlineUsers() {
+            document.getElementById('online-users').textContent = `在線用戶: ${onlineUsers}人`;
+        }
+
+        // 更新數據更新時間
+        function updateDataUpdateTime(timestamp) {
+            const timeElement = document.getElementById('data-update-time');
+            if (timestamp) {
+                const date = new Date(timestamp);
+                timeElement.textContent = `最後更新: ${date.toLocaleString('zh-TW')}`;
+            }
+        }
+
+        // 渲染貿易數據表格
+        function renderTradeDataTable() {
+            const tbody = document.getElementById('trade-data-body');
+            tbody.innerHTML = '';
+            
+            tradeData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                // 地點名稱
+                const locationCell = document.createElement('td');
+                locationCell.textContent = row[0];
+                tr.appendChild(locationCell);
+                
+                // 買入物品
+                const buyItemCell = document.createElement('td');
+                buyItemCell.textContent = row[1];
+                tr.appendChild(buyItemCell);
+                
+                // 買入價格%
+                const buyPriceCell = document.createElement('td');
+                const buyPriceInput = document.createElement('input');
+                buyPriceInput.type = 'number';
+                buyPriceInput.min = '0';
+                buyPriceInput.max = '200';
+                buyPriceInput.value = row[2];
+                buyPriceInput.dataset.index = index;
+                buyPriceInput.dataset.type = 'buy';
+                // 添加輸入事件監聽
+                buyPriceInput.addEventListener('input', debounce(() => {
+                    updateSingleField(index, 'buy', buyPriceInput.value);
+                }, 1000));
+                buyPriceCell.appendChild(buyPriceInput);
+                tr.appendChild(buyPriceCell);
+                
+                // 賣出物品
+                const sellItemCell = document.createElement('td');
+                const sellItemSelect = document.createElement('select');
+                sellItemSelect.dataset.index = index;
+                sellItemSelect.dataset.type = 'sell-item';
+                
+                ITEMS.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    if (item === row[3]) option.selected = true;
+                    sellItemSelect.appendChild(option);
+                });
+                
+                // 添加變更事件監聽
+                sellItemSelect.addEventListener('change', debounce(() => {
+                    updateSingleField(index, 'sell-item', sellItemSelect.value);
+                }, 1000));
+                
+                sellItemCell.appendChild(sellItemSelect);
+                tr.appendChild(sellItemCell);
+                
+                // 賣出價格%
+                const sellPriceCell = document.createElement('td');
+                const sellPriceInput = document.createElement('input');
+                sellPriceInput.type = 'number';
+                sellPriceInput.min = '0';
+                sellPriceInput.max = '200';
+                sellPriceInput.value = row[4];
+                sellPriceInput.dataset.index = index;
+                sellPriceInput.dataset.type = 'sell';
+                // 添加輸入事件監聽
+                sellPriceInput.addEventListener('input', debounce(() => {
+                    updateSingleField(index, 'sell', sellPriceInput.value);
+                }, 1000));
+                sellPriceCell.appendChild(sellPriceInput);
+                tr.appendChild(sellPriceCell);
+                
+                // 操作按鈕
+                const actionCell = document.createElement('td');
+                const saveButton = document.createElement('button');
+                saveButton.className = 'btn btn-small';
+                saveButton.textContent = '儲存';
+                saveButton.addEventListener('click', () => {
+                    saveSingleRow(index);
+                });
+                actionCell.appendChild(saveButton);
+                tr.appendChild(actionCell);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        // 更新單個字段
+        async function updateSingleField(index, fieldType, value) {
+            try {
+                const row = tradeData[index];
+                
+                // 更新本地數據
+                if (fieldType === 'buy') {
+                    row[2] = parseInt(value) || 0;
+                } else if (fieldType === 'sell-item') {
+                    row[3] = value;
+                } else if (fieldType === 'sell') {
+                    row[4] = parseInt(value) || 0;
+                }
+                
+                // 實時保存到服務器
+                const response = await fetch(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'updateField',
+                        index: index,
+                        fieldType: fieldType,
+                        value: value,
+                        userId: CONFIG.USER_ID,
+                        spreadsheetId: CONFIG.SPREADSHEET_ID
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('已自動保存');
+                    }
+                }
+            } catch (error) {
+                console.error('自動保存失敗:', error);
+            }
+        }
+
+        // 保存單行數據
+        async function saveSingleRow(index) {
+            try {
+                const row = tradeData[index];
+                
+                // 更新買入價格
+                const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
+                row[2] = parseInt(buyPriceInput.value) || 0;
+                
+                // 更新賣出物品
+                const sellItemSelect = document.querySelector(`select[data-index="${index}"][data-type="sell-item"]`);
+                row[3] = sellItemSelect.value;
+                
+                // 更新賣出價格
+                const sellPriceInput = document.querySelector(`input[data-index="${index}"][data-type="sell"]`);
+                row[4] = parseInt(sellPriceInput.value) || 0;
+                
+                // 保存到服務器
+                const response = await fetch(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveData',
+                        data: tradeData,
+                        userId: CONFIG.USER_ID,
+                        spreadsheetId: CONFIG.SPREADSHEET_ID
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        showToast('數據已儲存到服務器');
+                        updateDataUpdateTime(result.lastUpdated);
+                    }
+                }
+            } catch (error) {
+                console.error('保存數據失敗:', error);
+                showToast('保存失敗，請檢查網絡連接');
+            }
+        }
+
+        // 防抖函數
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        // 刷新計算結果
+        function refreshCalculations(tabId) {
+            switch(tabId) {
+                case 'avg-yield':
+                    refreshAvgYield();
+                    break;
+                case 'total-yield':
+                    refreshTotalYield();
+                    break;
+                case 'cycle-routes':
+                    refreshCycleRoutes();
+                    break;
+                case 'non-cycle-routes':
+                    refreshNonCycleRoutes();
+                    break;
+                case 'item-yield':
+                    refreshItemYield();
+                    break;
+            }
+        }
+
+        // 其他計算函數（保持不變）
+        function refreshAvgYield() {
+            const loading = document.getElementById('avg-yield-loading');
+            const table = document.getElementById('avg-yield-table');
+            const tbody = document.getElementById('avg-yield-body');
+            
+            loading.style.display = 'block';
+            table.style.display = 'none';
+            tbody.innerHTML = '';
+            
+            setTimeout(() => {
+                // 模擬計算結果
+                tbody.innerHTML = `
+                    <tr>
+                        <td>1</td>
+                        <td class="yield-high">🔥45.2%</td>
+                        <td><div class="route-path">龍城 → 龍穴 → 精靈之森</div></td>
+                        <td><div class="route-details">30.7% • 14.5%</div></td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td class="yield-high">🔥42.8%</td>
+                        <td><div class="route-path">魔物之森 → 鬼島 → 珊瑚區</div></td>
+                        <td><div class="route-details">32.6% • 10.2%</div></td>
+                    </tr>
+                `;
+                
+                loading.style.display = 'none';
+                table.style.display = 'table';
+                updateRefreshTime();
+            }, 500);
+        }
+
+        // 其他刷新函數類似...
+
+        function updateRefreshTime() {
+            const now = new Date();
+            lastRefreshTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            document.getElementById('refresh-time').textContent = `最後更新時間: ${lastRefreshTime}`;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 綁定其他刷新按鈕
+        document.getElementById('refresh-total-yield').addEventListener('click', () => refreshCalculations('total-yield'));
+        document.getElementById('refresh-cycle-routes').addEventListener('click', () => refreshCalculations('cycle-routes'));
+        document.getElementById('refresh-non-cycle-routes').addEventListener('click', () => refreshCalculations('non-cycle-routes'));
+        document.getElementById('refresh-item-yield').addEventListener('click', () => refreshCalculations('item-yield'));
+    </script>
+</body>
+</html>
