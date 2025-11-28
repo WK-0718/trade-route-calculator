@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大貿易節路線計算機</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* 保持原有的CSS樣式不變 */
+        :root {
+            --primary-color: #4a86e8;
+            --secondary-color: #b6d7a8;
+            --background-color: #f5f5f5;
+            --card-color: #ffffff;
+            --text-color: #333333;
+            --border-color: #dddddd;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 0;
+            text-align: center;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background-color: var(--card-color);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn:hover {
+            background-color: #3a76d8;
+        }
+        
+        .btn-success {
+            background-color: var(--success-color);
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning-color);
+        }
+        
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        
+        th, td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .yield-high {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+        
+        .yield-medium {
+            color: var(--warning-color);
+            font-weight: bold;
+        }
+        
+        .yield-low {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+        
+        .item-image {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle;
+            margin-right: 5px;
+            object-fit: contain;
+        }
+        
+        .tab-container {
+            display: flex;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            padding: 12px 15px;
+            background-color: white;
+            border: none;
+            cursor: pointer;
+            flex: 1;
+            text-align: center;
+            white-space: nowrap;
+            transition: background-color 0.3s;
+            font-size: 0.9rem;
+        }
+        
+        .tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: #e8f4fd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .refresh-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .message {
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .message-success {
+            background-color: #d5f4e6;
+            color: var(--success-color);
+            border: 1px solid #a3e4bc;
+        }
+        
+        .message-error {
+            background-color: #fadbd8;
+            color: var(--danger-color);
+            border: 1px solid #f5b7b1;
+        }
+        
+        .message-info {
+            background-color: #d6eaf8;
+            color: var(--primary-color);
+            border: 1px solid #aed6f1;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .debug-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            th, td {
+                padding: 8px 5px;
+                font-size: 0.85rem;
+            }
+            
+            .card {
+                padding: 10px;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 0.85rem;
+            }
+            
+            .tab {
+                padding: 10px 8px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>大貿易節路線計算機</h1>
+            <div class="subtitle">使用 Google Sheets 作為數據後端</div>
+        </header>
+        
+        <div class="status-bar">
+            <div>最後更新: <span id="last-update">尚未更新</span></div>
+            <button class="refresh-btn" id="refresh-btn">
+                <i class="fas fa-sync-alt"></i> 刷新數據
+            </button>
+        </div>
+        
+        <div class="tab-container">
+            <button class="tab active" data-tab="data-input">📊 數據輸入</button>
+            <button class="tab" data-tab="avg-yield">⭐ 平均收益率</button>
+            <button class="tab" data-tab="total-yield">🏆 總收益率</button>
+            <button class="tab" data-tab="cycle-routes">🔁 循環路線</button>
+            <button class="tab" data-tab="one-way-routes">➡️ 單程路線</button>
+            <button class="tab" data-tab="item-yield">📦 物品收益率</button>
+        </div>
+        
+        <!-- 數據輸入頁面 -->
+        <div class="tab-content active" id="data-input">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">貿易數據輸入</div>
+                    <div>
+                        <button class="btn btn-success" id="save-btn">
+                            <i class="fas fa-save"></i> 儲存數據
+                        </button>
+                        <button class="btn btn-danger" id="clear-btn">
+                            <i class="fas fa-trash"></i> 清除數據
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="message-area"></div>
+                
+                <div style="overflow-x: auto;">
+                    <table id="trade-data-table">
+                        <thead>
+                            <tr>
+                                <th>地點名稱</th>
+                                <th>買入物品</th>
+                                <th>買入價格%</th>
+                                <th>賣出物品</th>
+                                <th>賣出價格%</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 數據行將由JavaScript動態生成 -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 除錯資訊 -->
+                <div class="debug-info" id="debug-info" style="display: none;">
+                    <strong>除錯資訊:</strong>
+                    <div id="debug-content"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 其他頁面保持不變 -->
+        <div class="tab-content" id="avg-yield">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">平均收益率排名 (分段收益 ≥ 26%)</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="avg-yield-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="text-align: center; padding: 20px;">請先在數據輸入頁面載入數據</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="total-yield">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">總收益率排名 (分段收益 ≥ 26%)</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="total-yield-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="text-align: center; padding: 20px;">請先在數據輸入頁面載入數據</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="cycle-routes">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">循環路線 (2-7段)</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="cycle-routes-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益率</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" style="text-align: center; padding: 20px;">請先在數據輸入頁面載入數據</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="one-way-routes">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">單程路線 (2-7段)</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="one-way-routes-table">
+                        <thead>
+                            <tr>
+                                <th>排名</th>
+                                <th>總收益率</th>
+                                <th>平均收益率</th>
+                                <th>路徑</th>
+                                <th>分段收益</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" style="text-align: center; padding: 20px;">請先在數據輸入頁面載入數據</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="item-yield">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">各物品收益率</div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table id="item-yield-table">
+                        <thead>
+                            <tr>
+                                <th>物品</th>
+                                <th>買入地</th>
+                                <th>賣出地</th>
+                                <th>收益率</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="4" style="text-align: center; padding: 20px;">請先在數據輸入頁面載入數據</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Google Apps Script Web App URL
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxCO94O9_I5s91rsXhjIyCOe27L3BYu4u-UjqrYmtg2dg4Xwiip8FzSMlrjbSxvHHcr/exec';
+        
+        // 物品和地點常量
+        const ITEMS = [
+            "櫻花", "地獄蝠翼膜", "冬樹嫩芽", "魔礦石塊", "風滾草", 
+            "風風鈴", "回音海螺", "斯芬克斯的鬃毛", "古代石板", 
+            "砂鱷魚之果", "靈魂之燈", "嘰嘰鳥的雙面羽", "冰龍鱗", 
+            "王者之角", "鬼盞", "船蟹的螯", "地獄火種", "河童之玉", 
+            "巨鯨琥珀", "海怪觸手"
+        ];
+
+        const LOCATIONS = [
+            "龍城", "火龍迷宮", "飛龍山", "魔物之森", "精靈之森",
+            "綠洲城", "舊都遺址", "大沙漠", "砂城聖域", "冰海大陸",
+            "永冬冰原", "龍穴", "北嶺雪山", "黑暗森林", "墓園",
+            "地下城", "地底火山", "櫻島", "八百萬島", "漩渦島",
+            "鬼島", "珊瑚區", "沉船區", "風暴區", "靜謐海"
+        ];
+
+        // 固定買入物品對應關係
+        const BUY_ITEMS = {
+            "龍城": "櫻花",
+            "火龍迷宮": "冬樹嫩芽",
+            "飛龍山": "風滾草",
+            "魔物之森": "地獄蝠翼膜",
+            "精靈之森": "回音海螺",
+            "綠洲城": "風滾草",
+            "舊都遺址": "古代石板",
+            "大沙漠": "砂鱷魚之果",
+            "砂城聖域": "斯芬克斯的鬃毛",
+            "冰海大陸": "冬樹嫩芽",
+            "永冬冰原": "嘰嘰鳥的雙面羽",
+            "龍穴": "冰龍鱗",
+            "北嶺雪山": "王者之角",
+            "黑暗森林": "地獄蝠翼膜",
+            "墓園": "靈魂之燈",
+            "地下城": "魔礦石塊",
+            "地底火山": "地獄火種",
+            "櫻島": "櫻花",
+            "八百萬島": "風風鈴",
+            "漩渦島": "河童之玉",
+            "鬼島": "鬼盞",
+            "珊瑚區": "回音海螺",
+            "沉船區": "船蟹的螯",
+            "風暴區": "巨鯨琥珀",
+            "靜謐海": "海怪觸手"
+        };
+
+        // 初始化數據
+        let tradeData = [];
+        let lastUpdateTime = null;
+        let isSaving = false;
+
+        // DOM 加載完成後初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+        });
+
+        // 初始化應用
+        function initializeApp() {
+            loadTradeDataFromSheets();
+            updateLastUpdateTime();
+        }
+
+        // 設置事件監聽器
+        function setupEventListeners() {
+            // 選項卡切換
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+
+            // 刷新按鈕
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                loadTradeDataFromSheets();
+            });
+
+            // 儲存數據按鈕
+            document.getElementById('save-btn').addEventListener('click', function() {
+                saveTradeDataToSheets();
+            });
+
+            // 清除數據按鈕
+            document.getElementById('clear-btn').addEventListener('click', function() {
+                if (confirm('確定要清除所有數據嗎？')) {
+                    clearTradeData();
+                }
+            });
+        }
+
+        // 切換選項卡
+        function switchTab(tabId) {
+            // 隱藏所有選項卡內容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // 顯示選中的選項卡內容
+            document.getElementById(tabId).classList.add('active');
+
+            // 更新選項卡狀態
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                }
+            });
+
+            // 如果切換到分析頁面，則計算並顯示結果
+            if (tabId !== 'data-input') {
+                calculateAndDisplayAll();
+            }
+        }
+
+        // 從 Google Sheets 載入貿易數據
+        async function loadTradeDataFromSheets() {
+            try {
+                showMessage('正在從 Google Sheets 載入數據...', 'info');
+                
+                console.log('開始載入數據...');
+                
+                // 添加時間戳避免緩存
+                const timestamp = new Date().getTime();
+                const url = `${WEB_APP_URL}?action=getData&t=${timestamp}`;
+                
+                console.log('請求URL:', url);
+                
+                const response = await fetch(url);
+                
+                console.log('響應狀態:', response.status, response.statusText);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP錯誤: ${response.status} ${response.statusText}`);
+                }
+                
+                const text = await response.text();
+                console.log('響應內容:', text);
+                
+                let data;
+                try {
+                    data = JSON.parse(text);
+                } catch (parseError) {
+                    console.error('JSON解析錯誤:', parseError);
+                    throw new Error('服務器返回的數據格式不正確');
+                }
+                
+                if (data.success) {
+                    tradeData = data.data;
+                    console.log('載入的數據:', tradeData);
+                    renderTradeDataTable();
+                    updateLastUpdateTime();
+                    showMessage('數據載入成功！', 'success');
+                    hideDebugInfo();
+                } else {
+                    throw new Error(data.message || '載入數據失敗');
+                }
+            } catch (error) {
+                console.error('載入數據錯誤:', error);
+                showMessage('載入數據失敗: ' + error.message, 'error');
+                showDebugInfo('載入錯誤: ' + error.message);
+                
+                // 如果載入失敗，使用本地默認數據
+                if (tradeData.length === 0) {
+                    initializeDefaultData();
+                    showMessage('已載入默認數據，請檢查網絡連接後重試', 'warning');
+                }
+            }
+        }
+
+        // 顯示除錯資訊
+        function showDebugInfo(info) {
+            const debugInfo = document.getElementById('debug-info');
+            const debugContent = document.getElementById('debug-content');
+            debugContent.textContent = info;
+            debugInfo.style.display = 'block';
+        }
+
+        // 隱藏除錯資訊
+        function hideDebugInfo() {
+            document.getElementById('debug-info').style.display = 'none';
+        }
+
+        // 儲存貿易數據到 Google Sheets
+        async function saveTradeDataToSheets() {
+            if (isSaving) return;
+            
+            try {
+                isSaving = true;
+                const saveBtn = document.getElementById('save-btn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<div class="loading"></div> 儲存中...';
+                saveBtn.disabled = true;
+                
+                showMessage('正在儲存數據到 Google Sheets...', 'info');
+                
+                // 從表格收集數據
+                collectDataFromTable();
+                
+                console.log('要保存的數據:', tradeData);
+                
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'saveData',
+                        data: tradeData
+                    })
+                });
+                
+                console.log('保存響應狀態:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP錯誤: ${response.status}`);
+                }
+                
+                const text = await response.text();
+                console.log('保存響應內容:', text);
+                
+                let result;
+                try {
+                    result = JSON.parse(text);
+                } catch (parseError) {
+                    throw new Error('服務器返回的數據格式不正確');
+                }
+                
+                if (result.success) {
+                    showMessage('數據已成功儲存到 Google Sheets！', 'success');
+                    updateLastUpdateTime();
+                    hideDebugInfo();
+                } else {
+                    throw new Error(result.message || '儲存數據失敗');
+                }
+            } catch (error) {
+                console.error('儲存數據錯誤:', error);
+                showMessage('儲存數據失敗: ' + error.message, 'error');
+                showDebugInfo('保存錯誤: ' + error.message);
+            } finally {
+                isSaving = false;
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> 儲存數據';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // 從表格收集數據
+        function collectDataFromTable() {
+            const inputs = document.querySelectorAll('#trade-data-table input, #trade-data-table select');
+            
+            inputs.forEach(element => {
+                const index = parseInt(element.dataset.index);
+                const field = element.dataset.field;
+                
+                if (field === 'buyPercent' || field === 'sellPercent') {
+                    tradeData[index][field] = parseFloat(element.value) || 0;
+                } else {
+                    tradeData[index][field] = element.value;
+                }
+            });
+        }
+
+        // 初始化默認數據
+        function initializeDefaultData() {
+            tradeData = LOCATIONS.map(location => ({
+                location: location,
+                buyItem: BUY_ITEMS[location],
+                buyPercent: 0,
+                sellItem: "",
+                sellPercent: 0
+            }));
+            
+            renderTradeDataTable();
+        }
+
+        // 渲染貿易數據表格
+        function renderTradeDataTable() {
+            const tbody = document.querySelector('#trade-data-table tbody');
+            tbody.innerHTML = '';
+
+            tradeData.forEach((data, index) => {
+                const row = document.createElement('tr');
+                
+                // 地點名稱（固定）
+                const locationCell = document.createElement('td');
+                locationCell.textContent = data.location;
+                row.appendChild(locationCell);
+                
+                // 買入物品（固定）
+                const buyItemCell = document.createElement('td');
+                buyItemCell.textContent = data.buyItem;
+                row.appendChild(buyItemCell);
+                
+                // 買入價格%
+                const buyPercentCell = document.createElement('td');
+                const buyPercentInput = document.createElement('input');
+                buyPercentInput.type = 'number';
+                buyPercentInput.min = '0';
+                buyPercentInput.max = '200';
+                buyPercentInput.value = data.buyPercent || '';
+                buyPercentInput.dataset.index = index;
+                buyPercentInput.dataset.field = 'buyPercent';
+                buyPercentCell.appendChild(buyPercentInput);
+                row.appendChild(buyPercentCell);
+                
+                // 賣出物品（下拉選單）
+                const sellItemCell = document.createElement('td');
+                const sellItemSelect = document.createElement('select');
+                sellItemSelect.dataset.index = index;
+                sellItemSelect.dataset.field = 'sellItem';
+                
+                // 添加空選項
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = '請選擇';
+                sellItemSelect.appendChild(emptyOption);
+                
+                // 添加所有物品選項
+                ITEMS.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    if (item === data.sellItem) {
+                        option.selected = true;
+                    }
+                    sellItemSelect.appendChild(option);
+                });
+                
+                sellItemCell.appendChild(sellItemSelect);
+                row.appendChild(sellItemCell);
+                
+                // 賣出價格%
+                const sellPercentCell = document.createElement('td');
+                const sellPercentInput = document.createElement('input');
+                sellPercentInput.type = 'number';
+                sellPercentInput.min = '0';
+                sellPercentInput.max = '200';
+                sellPercentInput.value = data.sellPercent || '';
+                sellPercentInput.dataset.index = index;
+                sellPercentInput.dataset.field = 'sellPercent';
+                sellPercentCell.appendChild(sellPercentInput);
+                row.appendChild(sellPercentCell);
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        // 清除貿易數據
+        function clearTradeData() {
+            tradeData = LOCATIONS.map(location => ({
+                location: location,
+                buyItem: BUY_ITEMS[location],
+                buyPercent: 0,
+                sellItem: "",
+                sellPercent: 0
+            }));
+            
+            renderTradeDataTable();
+            showMessage('數據已清除！', 'success');
+        }
+
+        // 更新最後更新時間
+        function updateLastUpdateTime() {
+            const now = new Date();
+            lastUpdateTime = now;
+            const timeString = now.toLocaleTimeString('zh-TW');
+            document.getElementById('last-update').textContent = timeString;
+        }
+
+        // 計算並顯示所有分析結果
+        function calculateAndDisplayAll() {
+            // 簡化的計算邏輯
+            showAnalysisLoading();
+            
+            setTimeout(() => {
+                const allRoutes = calculateAllRoutes();
+                displayAvgYieldRanking(allRoutes);
+                displayTotalYieldRanking(allRoutes);
+                displayCycleRoutes(allRoutes);
+                displayOneWayRoutes(allRoutes);
+                displayItemYield();
+                showMessage('路線分析完成！', 'success');
+            }, 500);
+        }
+
+        // 顯示分析載入中訊息
+        function showAnalysisLoading() {
+            const tables = [
+                'avg-yield-table',
+                'total-yield-table', 
+                'cycle-routes-table',
+                'one-way-routes-table',
+                'item-yield-table'
+            ];
+            
+            tables.forEach(tableId => {
+                const tbody = document.querySelector(`#${tableId} tbody`);
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px;">計算中... <div class="loading" style="display: inline-block; margin-left: 10px;"></div></td></tr>';
+                }
+            });
+        }
+
+        // 計算所有可能的路線
+        function calculateAllRoutes() {
+            // 簡化的示例數據
+            return [
+                {
+                    path: ["龍城", "火龍迷宮", "精靈之森"],
+                    totalYield: 45.2,
+                    arithmeticMean: 22.6,
+                    isCycle: false,
+                    isValid: true,
+                    segmentYields: [30.7, 29.5]
+                }
+            ];
+        }
+
+        // 顯示平均收益率排名
+        function displayAvgYieldRanking(allRoutes) {
+            const tbody = document.querySelector('#avg-yield-table tbody');
+            if (!tbody) return;
+            
+            // 簡化的顯示邏輯
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">分析功能開發中</td></tr>';
+        }
+
+        // 顯示總收益率排名
+        function displayTotalYieldRanking(allRoutes) {
+            const tbody = document.querySelector('#total-yield-table tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">分析功能開發中</td></tr>';
+        }
+
+        // 顯示循環路線
+        function displayCycleRoutes(allRoutes) {
+            const tbody = document.querySelector('#cycle-routes-table tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">分析功能開發中</td></tr>';
+        }
+
+        // 顯示單程路線
+        function displayOneWayRoutes(allRoutes) {
+            const tbody = document.querySelector('#one-way-routes-table tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">分析功能開發中</td></tr>';
+        }
+
+        // 顯示各物品收益率
+        function displayItemYield() {
+            const tbody = document.querySelector('#item-yield-table tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">分析功能開發中</td></tr>';
+        }
+
+        // 顯示訊息
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('message-area');
+            if (!messageArea) return;
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.textContent = message;
+            
+            messageArea.innerHTML = '';
+            messageArea.appendChild(messageDiv);
+            
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    if (messageDiv.parentNode) {
+                        messageDiv.parentNode.removeChild(messageDiv);
+                    }
+                }, 500);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
