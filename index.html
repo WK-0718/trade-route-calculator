@@ -44,9 +44,6 @@
             color: white;
             padding: 15px;
             font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
         
         .card-body {
@@ -54,30 +51,15 @@
             overflow-x: auto;
         }
         
-        .btn {
-            background-color: #4a86e8;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .btn-danger {
-            background-color: #e74c3c;
-        }
-        
         table {
             width: 100%;
             border-collapse: collapse;
-            min-width: 800px;
         }
         
         th, td {
             padding: 12px;
             text-align: center;
-            border-bottom: 1px solid #ddd;
+            border: 1px solid #ddd;
         }
         
         th {
@@ -85,38 +67,20 @@
             font-weight: bold;
         }
         
-        select, input {
+        input, select {
             width: 100%;
             padding: 8px;
-            border: 1px solid #ddd;
+            border: 1px solid #ccc;
             border-radius: 4px;
         }
         
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            overflow-x: auto;
-        }
-        
-        .tab {
-            padding: 12px 20px;
-            background-color: #e0e0e0;
-            cursor: pointer;
-            border-radius: 8px 8px 0 0;
-            margin-right: 5px;
-        }
-        
-        .tab.active {
+        .btn {
             background-color: #4a86e8;
             color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -124,287 +88,421 @@
     <div class="container">
         <header>
             <h1>大貿易節路線計算機</h1>
-            <div>支持最高7段路線計算</div>
+            <p>數據輸入頁面</p>
         </header>
 
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('input')">數據輸入</div>
-            <div class="tab" onclick="switchTab('avg-yield')">平均收益率排名</div>
-            <div class="tab" onclick="switchTab('total-yield')">總收益率排名</div>
-            <div class="tab" onclick="switchTab('cycle-routes')">循環路線</div>
-            <div class="tab" onclick="switchTab('non-cycle-routes')">單程路線</div>
-        </div>
-        
-        <!-- 數據輸入 -->
-        <div class="tab-content active" id="input">
-            <div class="card">
-                <div class="card-header">
-                    <span>貿易數據輸入</span>
-                    <div>
-                        <button class="btn" onclick="saveAllData()">儲存所有數據</button>
-                        <button class="btn btn-danger" onclick="clearAllData()">清除所有數據</button>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>地點名稱</th>
-                                <th>買入物品</th>
-                                <th>買入價格%</th>
-                                <th>賣出物品</th>
-                                <th>賣出價格%</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trade-data-body">
-                            <!-- 數據將由JavaScript動態生成 -->
-                        </tbody>
-                    </table>
-                </div>
+        <div class="card">
+            <div class="card-header">
+                貿易數據輸入表格
             </div>
-        </div>
-        
-        <!-- 其他標籤頁內容 -->
-        <div class="tab-content" id="avg-yield">
-            <div class="card">
-                <div class="card-header">
-                    <span>平均收益率排名</span>
-                    <button class="btn" onclick="refreshCalculations('avg-yield')">刷新</button>
-                </div>
-                <div class="card-body">
-                    <div id="avg-yield-content">
-                        請先在數據輸入頁面輸入價格數據
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="tab-content" id="total-yield">
-            <div class="card">
-                <div class="card-header">
-                    <span>總收益率排名</span>
-                    <button class="btn" onclick="refreshCalculations('total-yield')">刷新</button>
-                </div>
-                <div class="card-body">
-                    <div id="total-yield-content">
-                        請先在數據輸入頁面輸入價格數據
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="tab-content" id="cycle-routes">
-            <div class="card">
-                <div class="card-header">
-                    <span>循環路線</span>
-                    <button class="btn" onclick="refreshCalculations('cycle-routes')">刷新</button>
-                </div>
-                <div class="card-body">
-                    <div id="cycle-routes-content">
-                        請先在數據輸入頁面輸入價格數據
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="tab-content" id="non-cycle-routes">
-            <div class="card">
-                <div class="card-header">
-                    <span>單程路線</span>
-                    <button class="btn" onclick="refreshCalculations('non-cycle-routes')">刷新</button>
-                </div>
-                <div class="card-body">
-                    <div id="non-cycle-routes-content">
-                        請先在數據輸入頁面輸入價格數據
-                    </div>
+            <div class="card-body">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>地點名稱</th>
+                            <th>買入物品</th>
+                            <th>買入價格%</th>
+                            <th>賣出物品</th>
+                            <th>賣出價格%</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>龍城</td>
+                            <td>櫻花</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>冰龍鱗</option>
+                                    <option>魔礦石塊</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="115"></td>
+                        </tr>
+                        <tr>
+                            <td>火龍迷宮</td>
+                            <td>冬樹嫩芽</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>回音海螺</option>
+                                    <option>冰龍鱗</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="111"></td>
+                        </tr>
+                        <tr>
+                            <td>飛龍山</td>
+                            <td>風滾草</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>河童之玉</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="110"></td>
+                        </tr>
+                        <tr>
+                            <td>魔物之森</td>
+                            <td>地獄蝠翼膜</td>
+                            <td><input type="number" value="86"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>回音海螺</option>
+                                    <option>河童之玉</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="110"></td>
+                        </tr>
+                        <tr>
+                            <td>精靈之森</td>
+                            <td>回音海螺</td>
+                            <td><input type="number" value="87"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>地獄火種</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>綠洲城</td>
+                            <td>風滾草</td>
+                            <td><input type="number" value="89"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>鬼盞</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>舊都遺址</td>
+                            <td>古代石板</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option selected>風滾草</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="113"></td>
+                        </tr>
+                        <tr>
+                            <td>大沙漠</td>
+                            <td>砂鱷魚之果</td>
+                            <td><input type="number" value="86"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>斯芬克斯的鬃毛</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="115"></td>
+                        </tr>
+                        <tr>
+                            <td>砂城聖域</td>
+                            <td>斯芬克斯的鬃毛</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>砂鱷魚之果</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="111"></td>
+                        </tr>
+                        <tr>
+                            <td>冰海大陸</td>
+                            <td>冬樹嫩芽</td>
+                            <td><input type="number" value="86"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>王者之角</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>永冬冰原</td>
+                            <td>嘰嘰鳥的雙面羽</td>
+                            <td><input type="number" value="87"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>王者之角</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>龍穴</td>
+                            <td>冰龍鱗</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>魔礦石塊</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>北嶺雪山</td>
+                            <td>王者之角</td>
+                            <td><input type="number" value="86"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>地獄火種</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>黑暗森林</td>
+                            <td>地獄蝠翼膜</td>
+                            <td><input type="number" value="90"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>回音海螺</option>
+                                    <option>地獄火種</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>墓園</td>
+                            <td>靈魂之燈</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>嘰嘰鳥的雙面羽</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>地下城</td>
+                            <td>魔礦石塊</td>
+                            <td><input type="number" value="87"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option selected>風滾草</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="111"></td>
+                        </tr>
+                        <tr>
+                            <td>地底火山</td>
+                            <td>地獄火種</td>
+                            <td><input type="number" value="87"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>靈魂之燈</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="111"></td>
+                        </tr>
+                        <tr>
+                            <td>櫻島</td>
+                            <td>櫻花</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>風風鈴</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>八百萬島</td>
+                            <td>風風鈴</td>
+                            <td><input type="number" value="89"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>河童之玉</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>漩渦島</td>
+                            <td>河童之玉</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>鬼盞</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>鬼島</td>
+                            <td>鬼盞</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option selected>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option>鬼盞</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="114"></td>
+                        </tr>
+                        <tr>
+                            <td>珊瑚區</td>
+                            <td>回音海螺</td>
+                            <td><input type="number" value="88"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>船蟹的螯</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="115"></td>
+                        </tr>
+                        <tr>
+                            <td>沉船區</td>
+                            <td>船蟹的螯</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>回音海螺</option>
+                                    <option>船蟹的螯</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="112"></td>
+                        </tr>
+                        <tr>
+                            <td>風暴區</td>
+                            <td>巨鯨琥珀</td>
+                            <td><input type="number" value="85"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>船蟹的螯</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="113"></td>
+                        </tr>
+                        <tr>
+                            <td>靜謐海</td>
+                            <td>海怪觸手</td>
+                            <td><input type="number" value="89"></td>
+                            <td>
+                                <select>
+                                    <option>櫻花</option>
+                                    <option>地獄蝠翼膜</option>
+                                    <option>冬樹嫩芽</option>
+                                    <option selected>風風鈴</option>
+                                    <option>回音海螺</option>
+                                </select>
+                            </td>
+                            <td><input type="number" value="113"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn" onclick="alert('數據已保存！')">保存所有數據</button>
+                    <button class="btn" onclick="clearAllData()" style="background-color: #e74c3c; margin-left: 10px;">清除所有數據</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // 簡單的數據
-        const tradeData = [
-            ["龍城", "櫻花", 88, "冰龍鱗", 115],
-            ["火龍迷宮", "冬樹嫩芽", 88, "回音海螺", 111],
-            ["飛龍山", "風滾草", 85, "河童之玉", 110],
-            ["魔物之森", "地獄蝠翼膜", 86, "回音海螺", 110],
-            ["精靈之森", "回音海螺", 87, "地獄火種", 114],
-            ["綠洲城", "風滾草", 89, "鬼盞", 114],
-            ["舊都遺址", "古代石板", 88, "風滾草", 113],
-            ["大沙漠", "砂鱷魚之果", 86, "斯芬克斯的鬃毛", 115],
-            ["砂城聖域", "斯芬克斯的鬃毛", 85, "砂鱷魚之果", 111],
-            ["冰海大陸", "冬樹嫩芽", 86, "王者之角", 112],
-            ["永冬冰原", "嘰嘰鳥的雙面羽", 87, "王者之角", 112],
-            ["龍穴", "冰龍鱗", 88, "魔礦石塊", 114],
-            ["北嶺雪山", "王者之角", 86, "地獄火種", 114],
-            ["黑暗森林", "地獄蝠翼膜", 90, "回音海螺", 112],
-            ["墓園", "靈魂之燈", 85, "嘰嘰鳥的雙面羽", 112],
-            ["地下城", "魔礦石塊", 87, "風滾草", 111],
-            ["地底火山", "地獄火種", 87, "靈魂之燈", 111],
-            ["櫻島", "櫻花", 88, "風風鈴", 112],
-            ["八百萬島", "風風鈴", 89, "河童之玉", 114],
-            ["漩渦島", "河童之玉", 88, "鬼盞", 112],
-            ["鬼島", "鬼盞", 85, "地獄蝠翼膜", 114],
-            ["珊瑚區", "回音海螺", 88, "船蟹的螯", 115],
-            ["沉船區", "船蟹的螯", 85, "回音海螺", 112],
-            ["風暴區", "巨鯨琥珀", 85, "船蟹的螯", 113],
-            ["靜謐海", "海怪觸手", 89, "風風鈴", 113]
-        ];
-
-        // 初始化函數
-        function initializeApp() {
-            renderTradeDataTable();
-        }
-
-        // 渲染表格
-        function renderTradeDataTable() {
-            const tbody = document.getElementById('trade-data-body');
-            tbody.innerHTML = '';
-            
-            tradeData.forEach((row, index) => {
-                const tr = document.createElement('tr');
-                
-                // 地點名稱
-                const locationCell = document.createElement('td');
-                locationCell.textContent = row[0];
-                tr.appendChild(locationCell);
-                
-                // 買入物品
-                const buyItemCell = document.createElement('td');
-                buyItemCell.textContent = row[1];
-                tr.appendChild(buyItemCell);
-                
-                // 買入價格%
-                const buyPriceCell = document.createElement('td');
-                const buyPriceInput = document.createElement('input');
-                buyPriceInput.type = 'number';
-                buyPriceInput.value = row[2];
-                buyPriceInput.dataset.index = index;
-                buyPriceCell.appendChild(buyPriceInput);
-                tr.appendChild(buyPriceCell);
-                
-                // 賣出物品
-                const sellItemCell = document.createElement('td');
-                const sellItemSelect = document.createElement('select');
-                sellItemSelect.dataset.index = index;
-                
-                // 添加選項
-                const items = ["櫻花", "地獄蝠翼膜", "冬樹嫩芽", "魔礦石塊", "風滾草", "風風鈴", "回音海螺", "斯芬克斯的鬃毛", "古代石板", "砂鱷魚之果", "靈魂之燈", "嘰嘰鳥的雙面羽", "冰龍鱗", "王者之角", "鬼盞", "船蟹的螯", "地獄火種", "河童之玉", "巨鯨琥珀", "海怪觸手"];
-                
-                items.forEach(item => {
-                    const option = document.createElement('option');
-                    option.value = item;
-                    option.textContent = item;
-                    if (item === row[3]) {
-                        option.selected = true;
-                    }
-                    sellItemSelect.appendChild(option);
-                });
-                
-                sellItemCell.appendChild(sellItemSelect);
-                tr.appendChild(sellItemCell);
-                
-                // 賣出價格%
-                const sellPriceCell = document.createElement('td');
-                const sellPriceInput = document.createElement('input');
-                sellPriceInput.type = 'number';
-                sellPriceInput.value = row[4];
-                sellPriceInput.dataset.index = index;
-                sellPriceCell.appendChild(sellPriceInput);
-                tr.appendChild(sellPriceCell);
-                
-                // 操作按鈕
-                const actionCell = document.createElement('td');
-                const saveButton = document.createElement('button');
-                saveButton.className = 'btn';
-                saveButton.textContent = '儲存';
-                saveButton.onclick = () => saveSingleRow(index);
-                actionCell.appendChild(saveButton);
-                tr.appendChild(actionCell);
-                
-                tbody.appendChild(tr);
-            });
-        }
-
-        // 切換標籤頁
-        function switchTab(tabId) {
-            // 隱藏所有標籤內容
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.remove('active');
-            });
-            
-            // 移除所有標籤的活動狀態
-            document.querySelectorAll('.tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // 顯示選中的標籤內容
-            document.getElementById(tabId).classList.add('active');
-            
-            // 設置選中的標籤為活動狀態
-            event.target.classList.add('active');
-        }
-
-        // 保存單行數據
-        function saveSingleRow(index) {
-            const row = tradeData[index];
-            
-            // 更新買入價格
-            const buyPriceInput = document.querySelector(`input[data-index="${index}"]`);
-            if (buyPriceInput) {
-                row[2] = parseInt(buyPriceInput.value) || 0;
-            }
-            
-            // 更新賣出物品
-            const sellItemSelect = document.querySelector(`select[data-index="${index}"]`);
-            if (sellItemSelect) {
-                row[3] = sellItemSelect.value;
-            }
-            
-            // 更新賣出價格
-            const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
-            if (inputs[1]) {
-                row[4] = parseInt(inputs[1].value) || 0;
-            }
-            
-            alert('數據已儲存！');
-        }
-
-        // 保存所有數據
-        function saveAllData() {
-            tradeData.forEach((row, index) => {
-                const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
-                const select = document.querySelector(`select[data-index="${index}"]`);
-                
-                if (inputs[0]) row[2] = parseInt(inputs[0].value) || 0;
-                if (select) row[3] = select.value;
-                if (inputs[1]) row[4] = parseInt(inputs[1].value) || 0;
-            });
-            
-            alert('所有數據已儲存！');
-        }
-
-        // 清除所有數據
         function clearAllData() {
             if (confirm('確定要清除所有數據嗎？所有價格將重置為0')) {
-                tradeData.forEach(row => {
-                    row[2] = 0;
-                    row[4] = 0;
+                const inputs = document.querySelectorAll('input[type="number"]');
+                inputs.forEach(input => {
+                    input.value = '0';
                 });
-                renderTradeDataTable();
-                alert('數據已清除！');
+                alert('所有數據已清除！');
             }
         }
-
-        // 刷新計算
-        function refreshCalculations(tabId) {
-            alert('計算功能需要先輸入數據！請在數據輸入頁面輸入價格數據。');
-        }
-
-        // 頁面加載時初始化
-        window.onload = initializeApp;
     </script>
 </body>
 </html>
