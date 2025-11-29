@@ -108,6 +108,14 @@
             background-color: #219653;
         }
         
+        .btn-warning {
+            background-color: #f39c12;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -244,6 +252,141 @@
             border: 1px solid #f5c6cb;
         }
 
+        .room-indicator {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .room-users {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a86e8;
+            box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
+        }
+
+        .room-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+
+        .room-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-item:last-child {
+            border-bottom: none;
+        }
+
+        .room-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .room-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
         /* 載入動畫 */
         .loading {
             display: inline-block;
@@ -303,6 +446,17 @@
             header h1 {
                 font-size: 1.8em;
             }
+
+            .room-indicator {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .room-actions {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -316,6 +470,10 @@
                 width: 100%;
                 margin: 5px 0;
             }
+
+            .modal-content {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -326,8 +484,29 @@
             <p>異世界奇妙生活 - 智能貿易路線分析系統</p>
         </header>
 
+        <!-- 房間狀態指示器 -->
+        <div class="room-indicator" id="room-indicator" style="display: none;">
+            <div>
+                <strong>🏠 房間:</strong> <span id="current-room-name">未命名房間</span>
+                <span id="current-room-id" style="margin-left: 10px; font-size: 12px; opacity: 0.8;"></span>
+            </div>
+            <div class="room-users">
+                <span>👥 在線用戶:</span>
+                <div id="room-users-list"></div>
+            </div>
+            <div class="room-actions">
+                <button class="btn btn-warning" onclick="leaveRoom()">離開房間</button>
+                <button class="btn btn-danger" onclick="closeRoom()">關閉房間</button>
+            </div>
+        </div>
+
         <div class="info-box">
             <strong>📖 使用說明：</strong> 在下方表格輸入各貿易地點的買入和賣出價格%，系統會自動計算最佳7段貿易路線。點擊"開始計算7段路線"獲取智能推薦。
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="showCreateRoomModal()">🏠 創建房間</button>
+                <button class="btn" onclick="showJoinRoomModal()">🚪 加入房間</button>
+                <button class="btn" onclick="useLocalMode()">💾 本地模式</button>
+            </div>
         </div>
         
         <div class="card">
@@ -341,6 +520,7 @@
             <div class="card-body">
                 <div class="info-box" style="margin-bottom: 20px;">
                     <strong>💡 提示：</strong> 請在遊戲中記錄各貿易地點的實際價格後輸入下方表格
+                    <span id="data-source-indicator" style="float: right; font-weight: bold;"></span>
                 </div>
                 <table>
                     <thead>
@@ -374,6 +554,51 @@
                 </div>
                 <div id="calculation-result">
                     <!-- 計算結果將顯示在這裡 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 創建房間模態框 -->
+        <div class="modal" id="create-room-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">🏠 創建新房間</div>
+                    <button class="close-modal" onclick="hideCreateRoomModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="room-name">房間名稱</label>
+                    <input type="text" class="form-control" id="room-name" placeholder="輸入房間名稱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-name">您的暱稱</label>
+                    <input type="text" class="form-control" id="user-name" placeholder="輸入您的暱稱">
+                </div>
+                <button class="btn btn-success" style="width: 100%;" onclick="createRoom()">創建房間</button>
+            </div>
+        </div>
+
+        <!-- 加入房間模態框 -->
+        <div class="modal" id="join-room-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">🚪 加入房間</div>
+                    <button class="close-modal" onclick="hideJoinRoomModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="join-user-name">您的暱稱</label>
+                    <input type="text" class="form-control" id="join-user-name" placeholder="輸入您的暱稱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="room-code">房間代碼</label>
+                    <input type="text" class="form-control" id="room-code" placeholder="輸入房間代碼">
+                </div>
+                <button class="btn btn-success" style="width: 100%;" onclick="joinRoom()">加入房間</button>
+                
+                <div style="margin-top: 20px;">
+                    <strong>或選擇現有房間:</strong>
+                    <div class="room-list" id="available-rooms">
+                        <!-- 房間列表將由JavaScript生成 -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -430,6 +655,12 @@
         const MAX_SEGMENTS = 7;
         const MIN_SEGMENT_YIELD = 26;
 
+        // 房間相關變量
+        let currentRoom = null;
+        let currentUser = null;
+        let isInRoom = false;
+        let isLocalMode = true;
+
         // 初始化頁面
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 初始化大貿易節路線計算機...");
@@ -440,9 +671,446 @@
             loadData();
             renderTradeDataTable();
             showMessage('✅ 系統初始化完成！請輸入貿易數據開始計算。', 'success');
+            
+            // 檢查是否有房間信息
+            checkRoomStatus();
         }
 
-        // 加載數據
+        // 檢查房間狀態
+        function checkRoomStatus() {
+            const savedRoom = localStorage.getItem('currentRoom');
+            const savedUser = localStorage.getItem('currentUser');
+            
+            if (savedRoom && savedUser) {
+                try {
+                    currentRoom = JSON.parse(savedRoom);
+                    currentUser = JSON.parse(savedUser);
+                    isInRoom = true;
+                    isLocalMode = false;
+                    
+                    showRoomIndicator();
+                    loadRoomData();
+                    showMessage(`✅ 已重新加入房間: ${currentRoom.name}`, 'success');
+                } catch (e) {
+                    console.error("解析房間信息失敗:", e);
+                    clearRoomData();
+                }
+            } else {
+                isLocalMode = true;
+                updateDataSourceIndicator();
+            }
+        }
+
+        // 顯示房間指示器
+        function showRoomIndicator() {
+            const indicator = document.getElementById('room-indicator');
+            const roomName = document.getElementById('current-room-name');
+            const roomId = document.getElementById('current-room-id');
+            
+            if (currentRoom) {
+                roomName.textContent = currentRoom.name;
+                roomId.textContent = `ID: ${currentRoom.id}`;
+                indicator.style.display = 'flex';
+                
+                updateRoomUsersList();
+            }
+        }
+
+        // 更新房間用戶列表
+        function updateRoomUsersList() {
+            const usersList = document.getElementById('room-users-list');
+            if (!usersList || !currentRoom) return;
+            
+            usersList.innerHTML = '';
+            
+            if (currentRoom.users && currentRoom.users.length > 0) {
+                currentRoom.users.forEach(user => {
+                    const userBadge = document.createElement('span');
+                    userBadge.className = 'user-badge';
+                    userBadge.textContent = user.name;
+                    usersList.appendChild(userBadge);
+                });
+            }
+        }
+
+        // 顯示創建房間模態框
+        function showCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'flex';
+        }
+
+        // 隱藏創建房間模態框
+        function hideCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'none';
+        }
+
+        // 顯示加入房間模態框
+        function showJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'flex';
+            loadAvailableRooms();
+        }
+
+        // 隱藏加入房間模態框
+        function hideJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'none';
+        }
+
+        // 創建房間
+        function createRoom() {
+            const roomName = document.getElementById('room-name').value.trim();
+            const userName = document.getElementById('user-name').value.trim();
+            
+            if (!roomName || !userName) {
+                showMessage('❌ 請填寫房間名稱和您的暱稱', 'error');
+                return;
+            }
+            
+            // 生成房間ID
+            const roomId = generateRoomId();
+            
+            // 創建房間對象
+            currentRoom = {
+                id: roomId,
+                name: roomName,
+                creator: userName,
+                users: [{ id: generateUserId(), name: userName }],
+                data: tradeData.map(row => [...row]), // 深拷貝數據
+                createdAt: new Date().toISOString()
+            };
+            
+            currentUser = {
+                id: currentRoom.users[0].id,
+                name: userName,
+                isCreator: true
+            };
+            
+            isInRoom = true;
+            isLocalMode = false;
+            
+            // 保存到本地存儲
+            saveRoomData();
+            
+            // 更新UI
+            showRoomIndicator();
+            hideCreateRoomModal();
+            updateDataSourceIndicator();
+            
+            showMessage(`✅ 房間 "${roomName}" 創建成功！`, 'success');
+            
+            // 模擬服務器保存（實際應用中這裡應該發送到服務器）
+            saveRoomToServer();
+        }
+
+        // 加入房間
+        function joinRoom() {
+            const userName = document.getElementById('join-user-name').value.trim();
+            const roomCode = document.getElementById('room-code').value.trim();
+            
+            if (!userName || !roomCode) {
+                showMessage('❌ 請填寫您的暱稱和房間代碼', 'error');
+                return;
+            }
+            
+            // 模擬從服務器加載房間（實際應用中這裡應該從服務器獲取）
+            const room = loadRoomFromServer(roomCode);
+            
+            if (!room) {
+                showMessage('❌ 找不到該房間，請檢查房間代碼是否正確', 'error');
+                return;
+            }
+            
+            // 檢查用戶是否已在房間中
+            const existingUser = room.users.find(u => u.name === userName);
+            if (existingUser) {
+                showMessage(`✅ 歡迎回來，${userName}！`, 'success');
+                currentUser = {
+                    id: existingUser.id,
+                    name: userName,
+                    isCreator: existingUser.id === room.creator
+                };
+            } else {
+                // 添加新用戶到房間
+                const newUser = { id: generateUserId(), name: userName };
+                room.users.push(newUser);
+                currentUser = {
+                    id: newUser.id,
+                    name: userName,
+                    isCreator: false
+                };
+                showMessage(`✅ 成功加入房間 "${room.name}"！`, 'success');
+            }
+            
+            currentRoom = room;
+            isInRoom = true;
+            isLocalMode = false;
+            
+            // 保存到本地存儲
+            saveRoomData();
+            
+            // 更新UI
+            showRoomIndicator();
+            hideJoinRoomModal();
+            updateDataSourceIndicator();
+            
+            // 加載房間數據
+            loadRoomData();
+            
+            // 模擬服務器更新（實際應用中這裡應該發送到服務器）
+            updateRoomOnServer();
+        }
+
+        // 離開房間
+        function leaveRoom() {
+            if (!currentRoom || !currentUser) return;
+            
+            if (confirm(`確定要離開房間 "${currentRoom.name}" 嗎？`)) {
+                // 如果是房間創建者，詢問是否關閉房間
+                if (currentUser.isCreator) {
+                    if (confirm('您是房間創建者，離開房間將關閉整個房間。確定要離開嗎？')) {
+                        closeRoom();
+                        return;
+                    } else {
+                        return;
+                    }
+                }
+                
+                // 從房間用戶列表中移除
+                currentRoom.users = currentRoom.users.filter(u => u.id !== currentUser.id);
+                
+                // 模擬服務器更新（實際應用中這裡應該發送到服務器）
+                updateRoomOnServer();
+                
+                // 清除本地數據
+                clearRoomData();
+                
+                showMessage(`✅ 已離開房間 "${currentRoom.name}"`, 'success');
+            }
+        }
+
+        // 關閉房間
+        function closeRoom() {
+            if (!currentRoom || !currentUser) return;
+            
+            if (confirm(`確定要關閉房間 "${currentRoom.name}" 嗎？所有用戶將被踢出房間。`)) {
+                // 模擬服務器刪除（實際應用中這裡應該發送到服務器）
+                deleteRoomFromServer();
+                
+                // 清除本地數據
+                clearRoomData();
+                
+                showMessage(`✅ 房間 "${currentRoom.name}" 已關閉`, 'success');
+            }
+        }
+
+        // 使用本地模式
+        function useLocalMode() {
+            if (isInRoom) {
+                if (confirm('切換到本地模式將離開當前房間。確定要切換嗎？')) {
+                    clearRoomData();
+                    showMessage('✅ 已切換到本地模式', 'success');
+                }
+            } else {
+                isLocalMode = true;
+                updateDataSourceIndicator();
+                showMessage('✅ 已使用本地模式', 'success');
+            }
+        }
+
+        // 生成房間ID
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        // 生成用戶ID
+        function generateUserId() {
+            return Math.random().toString(36).substring(2, 10);
+        }
+
+        // 保存房間數據到本地存儲
+        function saveRoomData() {
+            if (currentRoom && currentUser) {
+                localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
+
+        // 清除房間數據
+        function clearRoomData() {
+            currentRoom = null;
+            currentUser = null;
+            isInRoom = false;
+            isLocalMode = true;
+            
+            localStorage.removeItem('currentRoom');
+            localStorage.removeItem('currentUser');
+            
+            // 更新UI
+            document.getElementById('room-indicator').style.display = 'none';
+            updateDataSourceIndicator();
+            
+            // 重新加載本地數據
+            loadData();
+            renderTradeDataTable();
+        }
+
+        // 加載房間數據
+        function loadRoomData() {
+            if (!currentRoom || !currentRoom.data) return;
+            
+            // 使用房間數據更新本地數據
+            currentRoom.data.forEach((row, index) => {
+                if (tradeData[index]) {
+                    tradeData[index][2] = row[2];
+                    tradeData[index][3] = row[3];
+                    tradeData[index][4] = row[4];
+                }
+            });
+            
+            renderTradeDataTable();
+        }
+
+        // 更新數據源指示器
+        function updateDataSourceIndicator() {
+            const indicator = document.getElementById('data-source-indicator');
+            if (!indicator) return;
+            
+            if (isLocalMode) {
+                indicator.textContent = '💾 本地模式';
+                indicator.style.color = '#27ae60';
+            } else if (isInRoom) {
+                indicator.textContent = `🏠 房間: ${currentRoom.name}`;
+                indicator.style.color = '#9b59b6';
+            }
+        }
+
+        // 模擬服務器功能（實際應用中這些應該是真實的API調用）
+        
+        // 保存房間到服務器
+        function saveRoomToServer() {
+            // 模擬服務器保存
+            console.log("💾 保存房間到服務器:", currentRoom);
+            // 實際應用中這裡應該是 fetch 或 WebSocket 調用
+        }
+        
+        // 從服務器加載房間
+        function loadRoomFromServer(roomId) {
+            // 模擬從服務器加載
+            console.log("📥 從服務器加載房間:", roomId);
+            
+            // 這裡我們模擬返回一個房間
+            // 實際應用中這裡應該是 fetch 或 WebSocket 調用
+            const savedRooms = JSON.parse(localStorage.getItem('savedRooms') || '{}');
+            return savedRooms[roomId] || null;
+        }
+        
+        // 更新服務器上的房間
+        function updateRoomOnServer() {
+            // 模擬更新服務器上的房間
+            console.log("🔄 更新服務器上的房間:", currentRoom);
+            
+            // 保存到本地模擬的"服務器"
+            const savedRooms = JSON.parse(localStorage.getItem('savedRooms') || '{}');
+            savedRooms[currentRoom.id] = currentRoom;
+            localStorage.setItem('savedRooms', JSON.stringify(savedRooms));
+        }
+        
+        // 從服務器刪除房間
+        function deleteRoomFromServer() {
+            // 模擬從服務器刪除房間
+            console.log("🗑️ 從服務器刪除房間:", currentRoom.id);
+            
+            // 從本地模擬的"服務器"中刪除
+            const savedRooms = JSON.parse(localStorage.getItem('savedRooms') || '{}');
+            delete savedRooms[currentRoom.id];
+            localStorage.setItem('savedRooms', JSON.stringify(savedRooms));
+        }
+        
+        // 加載可用房間列表
+        function loadAvailableRooms() {
+            const availableRooms = document.getElementById('available-rooms');
+            if (!availableRooms) return;
+            
+            // 模擬從服務器獲取房間列表
+            const savedRooms = JSON.parse(localStorage.getItem('savedRooms') || '{}');
+            const rooms = Object.values(savedRooms);
+            
+            availableRooms.innerHTML = '';
+            
+            if (rooms.length === 0) {
+                availableRooms.innerHTML = '<div class="room-item" style="justify-content: center;">暫無可用房間</div>';
+                return;
+            }
+            
+            rooms.forEach(room => {
+                const roomItem = document.createElement('div');
+                roomItem.className = 'room-item';
+                
+                const roomInfo = document.createElement('div');
+                roomInfo.className = 'room-info';
+                
+                const roomName = document.createElement('div');
+                roomName.className = 'room-name';
+                roomName.textContent = room.name;
+                
+                const roomMeta = document.createElement('div');
+                roomMeta.className = 'room-meta';
+                roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users.length}人 | 創建者: ${room.creator}`;
+                
+                roomInfo.appendChild(roomName);
+                roomInfo.appendChild(roomMeta);
+                
+                const joinButton = document.createElement('button');
+                joinButton.className = 'btn';
+                joinButton.textContent = '加入';
+                joinButton.onclick = () => {
+                    document.getElementById('room-code').value = room.id;
+                };
+                
+                roomItem.appendChild(roomInfo);
+                roomItem.appendChild(joinButton);
+                
+                availableRooms.appendChild(roomItem);
+            });
+        }
+
+        // 保存數據時檢查是否在房間中
+        function saveAllData() {
+            try {
+                let hasData = false;
+                tradeData.forEach((row, index) => {
+                    const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
+                    const select = document.querySelector(`select[data-index="${index}"]`);
+                    
+                    if (inputs[0]) {
+                        row[2] = parseInt(inputs[0].value) || 0;
+                        if (row[2] > 0) hasData = true;
+                    }
+                    if (select) row[3] = select.value;
+                    if (inputs[1]) {
+                        row[4] = parseInt(inputs[1].value) || 0;
+                        if (row[4] > 0) hasData = true;
+                    }
+                });
+                
+                saveToLocalStorage();
+                
+                // 如果在房間中，更新房間數據
+                if (isInRoom && currentRoom) {
+                    currentRoom.data = tradeData.map(row => [...row]);
+                    updateRoomOnServer();
+                }
+                
+                if (hasData) {
+                    showMessage('✅ 所有數據已儲存！現在可以計算路線了。', 'success');
+                } else {
+                    showMessage('⚠️ 數據已儲存，但檢測到所有價格都為0，請輸入實際價格。', 'error');
+                }
+            } catch (error) {
+                console.error("❌ 保存所有數據時出錯:", error);
+                showMessage('❌ 保存失敗，請檢查控制台錯誤信息', 'error');
+            }
+        }
+
+        // 以下為原有功能，保持不變
         function loadData() {
             try {
                 const saved = localStorage.getItem('tradeData');
@@ -462,7 +1130,6 @@
             }
         }
 
-        // 渲染表格
         function renderTradeDataTable() {
             const tbody = document.getElementById('trade-data-body');
             if (!tbody) {
@@ -537,6 +1204,7 @@
             });
             
             console.log("✅ 表格渲染完成");
+            updateDataSourceIndicator();
         }
 
         function createCell(text) {
@@ -545,7 +1213,6 @@
             return cell;
         }
 
-        // 保存單行數據
         function saveSingleRow(index) {
             try {
                 const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
@@ -556,6 +1223,13 @@
                 if (inputs[1]) tradeData[index][4] = parseInt(inputs[1].value) || 0;
                 
                 saveToLocalStorage();
+                
+                // 如果在房間中，更新房間數據
+                if (isInRoom && currentRoom) {
+                    currentRoom.data = tradeData.map(row => [...row]);
+                    updateRoomOnServer();
+                }
+                
                 showMessage(`✅ 第 ${index + 1} 行數據已儲存！`, 'success');
             } catch (error) {
                 console.error("❌ 保存單行數據時出錯:", error);
@@ -563,38 +1237,6 @@
             }
         }
 
-        // 保存所有數據
-        function saveAllData() {
-            try {
-                let hasData = false;
-                tradeData.forEach((row, index) => {
-                    const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
-                    const select = document.querySelector(`select[data-index="${index}"]`);
-                    
-                    if (inputs[0]) {
-                        row[2] = parseInt(inputs[0].value) || 0;
-                        if (row[2] > 0) hasData = true;
-                    }
-                    if (select) row[3] = select.value;
-                    if (inputs[1]) {
-                        row[4] = parseInt(inputs[1].value) || 0;
-                        if (row[4] > 0) hasData = true;
-                    }
-                });
-                
-                saveToLocalStorage();
-                if (hasData) {
-                    showMessage('✅ 所有數據已儲存！現在可以計算路線了。', 'success');
-                } else {
-                    showMessage('⚠️ 數據已儲存，但檢測到所有價格都為0，請輸入實際價格。', 'error');
-                }
-            } catch (error) {
-                console.error("❌ 保存所有數據時出錯:", error);
-                showMessage('❌ 保存失敗，請檢查控制台錯誤信息', 'error');
-            }
-        }
-
-        // 清除所有數據
         function clearAllData() {
             if (confirm('⚠️ 確定要清除所有數據嗎？所有價格將重置為0')) {
                 tradeData.forEach(row => {
@@ -603,6 +1245,13 @@
                 });
                 renderTradeDataTable();
                 saveToLocalStorage();
+                
+                // 如果在房間中，更新房間數據
+                if (isInRoom && currentRoom) {
+                    currentRoom.data = tradeData.map(row => [...row]);
+                    updateRoomOnServer();
+                }
+                
                 showMessage('🗑️ 所有數據已清除！', 'success');
             }
         }
@@ -616,7 +1265,6 @@
             }
         }
 
-        // 顯示消息
         function showMessage(message, type) {
             const statusDiv = document.getElementById('calculation-status');
             if (statusDiv) {
@@ -626,7 +1274,6 @@
             }
         }
 
-        // 路線計算功能
         function calculateRoutes() {
             const statusDiv = document.getElementById('calculation-status');
             const resultDiv = document.getElementById('calculation-result');
@@ -663,7 +1310,6 @@
             }, 100);
         }
 
-        // 路線計算算法
         function calculateAllRoutes() {
             console.log("🔄 開始計算貿易路線...");
             
@@ -787,7 +1433,7 @@
 
             // 3. 過濾和排序路線
             const sortedRoutes = allRoutes
-                .sort((a, b) => b.avgYield - a.avgYield);
+                .sort((a, b) => b.avgYield - b.avgYield);
 
             // 循環路線
             const cycleRoutes = sortedRoutes
@@ -818,7 +1464,6 @@
             };
         }
 
-        // 顯示計算結果
         function displayResults(routes) {
             let html = '';
 
