@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大貿易節路線計算機 - 管理員設定</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #4a86e8 0%, #3a76d8 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #4a86e8 0%, #3a76d8 100%);
+            color: white;
+            padding: 18px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .card-body {
+            padding: 25px;
+        }
+        
+        .btn {
+            background-color: #4a86e8;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin: 5px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background-color: #3a76d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        .btn-info {
+            background-color: #3498db;
+        }
+        
+        .btn-info:hover {
+            background-color: #2980b9;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: #4a86e8;
+            box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d4e6f9 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #4a86e8;
+            font-size: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .admin-panel {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #e17055;
+        }
+        
+        .room-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        
+        .room-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .room-item:last-child {
+            border-bottom: none;
+        }
+        
+        .room-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .room-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .room-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            overflow-x: auto;
+            margin: 15px 0;
+            line-height: 1.5;
+        }
+        
+        .step {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #4a86e8;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .step-title {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            border-bottom: 2px solid #4a86e8;
+            margin-bottom: 20px;
+        }
+        
+        .nav-tab {
+            padding: 12px 20px;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            color: #6c757d;
+            transition: all 0.3s;
+        }
+        
+        .nav-tab.active {
+            background: #4a86e8;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* 載入動畫 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4a86e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* 手機響應式調整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 0 5px;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 13px;
+                margin: 2px;
+            }
+            
+            .form-control {
+                padding: 8px;
+                font-size: 13px;
+            }
+            
+            .info-box {
+                padding: 15px;
+                font-size: 14px;
+            }
+            
+            header {
+                padding: 20px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+            
+            .nav-tabs {
+                flex-direction: column;
+            }
+            
+            .nav-tab {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 大貿易節路線計算機 - 管理員設定</h1>
+            <p>Firebase配置與房間管理系統</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('firebase-setup')">Firebase設定</button>
+            <button class="nav-tab" onclick="switchTab('room-management')">房間管理</button>
+            <button class="nav-tab" onclick="switchTab('app-info')">應用程式資訊</button>
+        </div>
+
+        <!-- Firebase設定頁籤 -->
+        <div id="firebase-setup" class="tab-content active">
+            <div class="info-box">
+                <strong>📖 Firebase設定說明：</strong> 請按照以下步驟設定Firebase，以啟用線上房間功能。
+            </div>
+            
+            <div class="step">
+                <div class="step-title"><span class="step-number">1</span> 建立Firebase專案</div>
+                <p>前往 <a href="https://console.firebase.google.com/" target="_blank">Firebase控制台</a> 並建立新專案：</p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>點擊「新增專案」</li>
+                    <li>輸入專案名稱（例如：trade-route-calculator）</li>
+                    <li>選擇是否啟用Google Analytics（建議不啟用以簡化設定）</li>
+                    <li>點擊「建立專案」</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <div class="step-title"><span class="step-number">2</span> 設定Firestore資料庫</div>
+                <p>在Firebase控制台中：</p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>在左側選單中點擊「Firestore Database」</li>
+                    <li>點擊「建立資料庫」</li>
+                    <li>選擇「以測試模式啟動」</li>
+                    <li>選擇資料庫位置（建議選擇asia-east1或離您最近的區域）</li>
+                    <li>點擊「完成」</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <div class="step-title"><span class="step-number">3</span> 取得Firebase設定</div>
+                <p>在Firebase控制台中：</p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>點擊左上角的專案設定圖示（齒輪圖標）</li>
+                    <li>選擇「專案設定」</li>
+                    <li>向下滾動到「您的應用程式」部分</li>
+                    <li>點擊「新增應用程式」並選擇「Web」</li>
+                    <li>輸入應用程式暱稱（例如：trade-calculator-web）</li>
+                    <li>點擊「註冊應用程式」</li>
+                    <li>複製提供的Firebase設定代碼</li>
+                </ul>
+            </div>
+            
+            <div class="step">
+                <div class="step-title"><span class="step-number">4</span> 輸入Firebase設定</div>
+                <p>將從Firebase獲取的設定代碼貼到下方表單中：</p>
+                
+                <div class="card">
+                    <div class="card-header">Firebase 設定</div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label" for="api-key">API Key</label>
+                            <input type="text" class="form-control" id="api-key" placeholder="輸入 API Key">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="auth-domain">Auth Domain</label>
+                            <input type="text" class="form-control" id="auth-domain" placeholder="輸入 Auth Domain">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="project-id">Project ID</label>
+                            <input type="text" class="form-control" id="project-id" placeholder="輸入 Project ID">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="storage-bucket">Storage Bucket</label>
+                            <input type="text" class="form-control" id="storage-bucket" placeholder="輸入 Storage Bucket">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="messaging-sender-id">Messaging Sender ID</label>
+                            <input type="text" class="form-control" id="messaging-sender-id" placeholder="輸入 Messaging Sender ID">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="app-id">App ID</label>
+                            <input type="text" class="form-control" id="app-id" placeholder="輸入 App ID">
+                        </div>
+                        <button class="btn btn-success" onclick="saveFirebaseConfig()">💾 儲存 Firebase 設定</button>
+                        <button class="btn btn-info" onclick="testFirebaseConnection()">🔍 測試 Firebase 連線</button>
+                        <button class="btn btn-warning" onclick="clearFirebaseConfig()">🗑️ 清除設定</button>
+                        
+                        <div id="firebase-status" style="margin-top: 15px;"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-title"><span class="step-number">5</span> 安全規則設定（可選）</div>
+                <p>若要加強安全性，可以在Firestore中設定規則：</p>
+                <div class="code-block">
+                    rules_version = '2';<br>
+                    service cloud.firestore {<br>
+                    &nbsp;&nbsp;match /databases/{database}/documents {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;match /rooms/{roomId} {<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;allow read, write: if request.time &lt; timestamp.date(2025, 12, 31);<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+                    &nbsp;&nbsp;}<br>
+                    }
+                </div>
+                <p>這將允許在2025年底前對房間進行讀寫操作。您可以根據需要調整規則。</p>
+            </div>
+        </div>
+
+        <!-- 房間管理頁籤 -->
+        <div id="room-management" class="tab-content">
+            <div class="info-box">
+                <strong>📖 房間管理說明：</strong> 管理所有線上房間，包括查看、清理和刪除房間。
+            </div>
+            
+            <div class="card">
+                <div class="card-header">房間管理工具</div>
+                <div class="card-body">
+                    <div class="admin-panel">
+                        <h4>🔧 房間管理</h4>
+                        <div>
+                            <button class="btn btn-info" onclick="listAllRooms()">📋 列出所有房間</button>
+                            <button class="btn btn-warning" onclick="cleanupOldRooms()">🧹 清理舊房間 (24小時以上)</button>
+                            <button class="btn btn-danger" onclick="deleteAllRooms()">🗑️ 刪除所有房間</button>
+                        </div>
+                    </div>
+                    
+                    <div id="admin-log" style="margin-top: 10px; font-size: 14px; max-height: 400px; overflow-y: auto; padding: 10px; background: #f8f9fa; border-radius: 6px;"></div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">房間統計</div>
+                <div class="card-body">
+                    <div id="room-stats">
+                        <p>點擊「列出所有房間」以查看統計資訊</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 應用程式資訊頁籤 -->
+        <div id="app-info" class="tab-content">
+            <div class="info-box">
+                <strong>📖 應用程式資訊：</strong> 關於大貿易節路線計算機的技術資訊。
+            </div>
+            
+            <div class="card">
+                <div class="card-header">應用程式詳細資訊</div>
+                <div class="card-body">
+                    <h3>大貿易節路線計算機</h3>
+                    <p>這是一個專為「異世界奇妙生活」遊戲設計的貿易路線計算工具。</p>
+                    
+                    <h4>主要功能：</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>📊 貿易數據輸入與管理</li>
+                        <li>🎯 智能路線計算（最多7段貿易路線）</li>
+                        <li>🏠 線上房間系統（多人協作）</li>
+                        <li>📱 響應式設計（支援手機和電腦）</li>
+                        <li>💾 本地與雲端數據儲存</li>
+                    </ul>
+                    
+                    <h4>技術規格：</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>前端：HTML5, CSS3, JavaScript</li>
+                        <li>後端：Firebase Firestore（雲端資料庫）</li>
+                        <li>儲存：本地儲存 (localStorage) 與雲端同步</li>
+                        <li>相容性：所有現代瀏覽器</li>
+                    </ul>
+                    
+                    <h4>版本資訊：</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li>當前版本：v2.0.0</li>
+                        <li>更新日期：2023年11月</li>
+                        <li>開發者：異世界奇妙生活社群</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header">疑難排解</div>
+                <div class="card-body">
+                    <h4>常見問題與解決方法：</h4>
+                    
+                    <div style="margin: 15px 0;">
+                        <strong>Q: Firebase連線失敗</strong>
+                        <p>A: 請檢查Firebase設定是否正確，並確認網路連線正常。</p>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <strong>Q: 房間功能無法使用</strong>
+                        <p>A: 請確認已正確設定Firebase，並且Firestore資料庫已建立。</p>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <strong>Q: 數據無法同步</strong>
+                        <p>A: 請檢查瀏覽器是否支援localStorage，並嘗試清除瀏覽器快取。</p>
+                    </div>
+                    
+                    <div style="margin: 15px 0;">
+                        <strong>Q: 如何備份數據</strong>
+                        <p>A: 數據會自動儲存在本地和雲端。您也可以使用「儲存所有數據」按鈕手動備份。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === Firebase 配置 ===
+        let db = null;
+        let firebaseConfig = null;
+
+        // 初始化頁面
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🔧 管理員設定頁面初始化...");
+            loadFirebaseConfig();
+        });
+
+        // 切換頁籤
+        function switchTab(tabId) {
+            // 隱藏所有頁籤內容
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有頁籤的主動狀態
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 顯示選定的頁籤內容
+            document.getElementById(tabId).classList.add('active');
+            
+            // 設定選定頁籤為主動狀態
+            event.target.classList.add('active');
+        }
+
+        // 載入Firebase設定
+        function loadFirebaseConfig() {
+            try {
+                const savedConfig = localStorage.getItem('firebaseConfig');
+                if (savedConfig) {
+                    firebaseConfig = JSON.parse(savedConfig);
+                    
+                    // 填入表單
+                    document.getElementById('api-key').value = firebaseConfig.apiKey || '';
+                    document.getElementById('auth-domain').value = firebaseConfig.authDomain || '';
+                    document.getElementById('project-id').value = firebaseConfig.projectId || '';
+                    document.getElementById('storage-bucket').value = firebaseConfig.storageBucket || '';
+                    document.getElementById('messaging-sender-id').value = firebaseConfig.messagingSenderId || '';
+                    document.getElementById('app-id').value = firebaseConfig.appId || '';
+                    
+                    showMessage('✅ Firebase設定已載入', 'success', 'firebase-status');
+                    initializeFirebase();
+                } else {
+                    showMessage('ℹ️ 尚未設定Firebase，請先完成設定', 'info', 'firebase-status');
+                }
+            } catch (error) {
+                console.error("載入Firebase設定時出錯:", error);
+                showMessage('❌ 載入Firebase設定失敗: ' + error.message, 'error', 'firebase-status');
+            }
+        }
+
+        // 儲存Firebase設定
+        function saveFirebaseConfig() {
+            try {
+                firebaseConfig = {
+                    apiKey: document.getElementById('api-key').value.trim(),
+                    authDomain: document.getElementById('auth-domain').value.trim(),
+                    projectId: document.getElementById('project-id').value.trim(),
+                    storageBucket: document.getElementById('storage-bucket').value.trim(),
+                    messagingSenderId: document.getElementById('messaging-sender-id').value.trim(),
+                    appId: document.getElementById('app-id').value.trim()
+                };
+                
+                // 驗證必要欄位
+                if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
+                    showMessage('❌ 請填寫所有必要欄位 (API Key, Auth Domain, Project ID)', 'error', 'firebase-status');
+                    return;
+                }
+                
+                localStorage.setItem('firebaseConfig', JSON.stringify(firebaseConfig));
+                showMessage('✅ Firebase設定已儲存！', 'success', 'firebase-status');
+                
+                // 初始化Firebase
+                initializeFirebase();
+                
+            } catch (error) {
+                console.error("儲存Firebase設定時出錯:", error);
+                showMessage('❌ 儲存Firebase設定失敗: ' + error.message, 'error', 'firebase-status');
+            }
+        }
+
+        // 初始化Firebase
+        function initializeFirebase() {
+            try {
+                if (window.firebase && firebaseConfig) {
+                    // 檢查是否已經初始化
+                    if (firebase.apps.length === 0) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
+                    
+                    db = firebase.firestore();
+                    console.log("✅ Firebase 初始化成功");
+                    showMessage('✅ Firebase 連線成功！', 'success', 'firebase-status');
+                    
+                    // 啟用房間管理功能
+                    document.querySelectorAll('#room-management .btn').forEach(btn => {
+                        btn.disabled = false;
+                    });
+                    
+                } else {
+                    showMessage('❌ Firebase SDK 未載入或設定不完整', 'error', 'firebase-status');
+                }
+            } catch (error) {
+                console.error("❌ Firebase 初始化失敗:", error);
+                showMessage('❌ Firebase 初始化失敗: ' + error.message, 'error', 'firebase-status');
+            }
+        }
+
+        // 測試Firebase連線
+        async function testFirebaseConnection() {
+            if (!db) {
+                showMessage('❌ 請先儲存Firebase設定', 'error', 'firebase-status');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('firebase-status');
+            statusDiv.innerHTML = '<div class="loading"></div> 測試Firebase連線中...';
+            
+            try {
+                // 嘗試讀取一個不存在的文件來測試連線
+                const testDoc = await db.collection('test').doc('connection-test').get();
+                showMessage('✅ Firebase 連線測試成功！', 'success', 'firebase-status');
+            } catch (error) {
+                console.error("Firebase連線測試失敗:", error);
+                showMessage('❌ Firebase 連線測試失敗: ' + error.message, 'error', 'firebase-status');
+            }
+        }
+
+        // 清除Firebase設定
+        function clearFirebaseConfig() {
+            if (confirm('確定要清除Firebase設定嗎？這將停用所有線上功能。')) {
+                localStorage.removeItem('firebaseConfig');
+                firebaseConfig = null;
+                db = null;
+                
+                // 清除表單
+                document.getElementById('api-key').value = '';
+                document.getElementById('auth-domain').value = '';
+                document.getElementById('project-id').value = '';
+                document.getElementById('storage-bucket').value = '';
+                document.getElementById('messaging-sender-id').value = '';
+                document.getElementById('app-id').value = '';
+                
+                showMessage('🗑️ Firebase設定已清除', 'success', 'firebase-status');
+                
+                // 停用房間管理功能
+                document.querySelectorAll('#room-management .btn').forEach(btn => {
+                    btn.disabled = true;
+                });
+            }
+        }
+
+        // === 房間管理功能 ===
+        async function listAllRooms() {
+            if (!db) {
+                showAdminLog('❌ 請先設定Firebase連線');
+                return;
+            }
+            
+            showAdminLog('<div class="loading"></div> 載入房間列表中...');
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const adminLog = document.getElementById('admin-log');
+                const roomStats = document.getElementById('room-stats');
+                
+                if (snapshot.empty) {
+                    adminLog.innerHTML = '📭 沒有找到任何房間';
+                    roomStats.innerHTML = '<p>目前沒有活躍的房間</p>';
+                    return;
+                }
+                
+                let html = `找到 ${snapshot.size} 個房間:<br><br>`;
+                let totalUsers = 0;
+                let activeRooms = 0;
+                const now = new Date();
+                
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const userCount = room.users ? room.users.length : 0;
+                    totalUsers += userCount;
+                    
+                    const lastActive = new Date(room.lastActive);
+                    const hoursAgo = (now - lastActive) / (1000 * 60 * 60);
+                    const isActive = hoursAgo < 24;
+                    
+                    if (isActive) activeRooms++;
+                    
+                    html += `<div class="room-item">
+                        <div class="room-info">
+                            <div class="room-name">${room.name} (ID: ${room.id})</div>
+                            <div class="room-meta">
+                                用戶: ${userCount}人 | 創建者: ${room.creator} | 
+                                最後活動: ${getTimeAgo(room.lastActive)} |
+                                ${isActive ? '🟢 活躍' : '🔴 非活躍'}
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" onclick="deleteRoom('${room.id}')">刪除</button>
+                    </div>`;
+                });
+                
+                adminLog.innerHTML = html;
+                
+                // 更新統計資訊
+                roomStats.innerHTML = `
+                    <p><strong>房間統計:</strong></p>
+                    <ul>
+                        <li>總房間數: ${snapshot.size}</li>
+                        <li>活躍房間 (24小時內): ${activeRooms}</li>
+                        <li>非活躍房間: ${snapshot.size - activeRooms}</li>
+                        <li>總用戶數: ${totalUsers}</li>
+                    </ul>
+                `;
+                
+            } catch (error) {
+                console.error("列出房間失敗:", error);
+                showAdminLog('❌ 載入房間列表失敗: ' + error.message);
+            }
+        }
+
+        async function cleanupOldRooms() {
+            if (!db) {
+                showAdminLog('❌ 請先設定Firebase連線');
+                return;
+            }
+            
+            if (!confirm('確定要清理24小時未活動的房間嗎？')) {
+                return;
+            }
+            
+            showAdminLog('<div class="loading"></div> 清理舊房間中...');
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const now = new Date();
+                let deletedCount = 0;
+                
+                const promises = [];
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const lastActive = new Date(room.lastActive);
+                    const hoursAgo = (now - lastActive) / (1000 * 60 * 60);
+                    
+                    // 刪除24小時未活動的房間
+                    if (hoursAgo > 24) {
+                        promises.push(db.collection('rooms').doc(room.id).delete());
+                        deletedCount++;
+                    }
+                });
+                
+                await Promise.all(promises);
+                showAdminLog(`✅ 已清理 ${deletedCount} 個舊房間`);
+                
+                // 更新房間列表
+                listAllRooms();
+                
+            } catch (error) {
+                console.error("清理房間失敗:", error);
+                showAdminLog('❌ 清理房間失敗: ' + error.message);
+            }
+        }
+
+        async function deleteAllRooms() {
+            if (!db) {
+                showAdminLog('❌ 請先設定Firebase連線');
+                return;
+            }
+            
+            if (!confirm('⚠️ 確定要刪除所有房間嗎？此操作無法恢復！')) {
+                return;
+            }
+            
+            showAdminLog('<div class="loading"></div> 刪除所有房間中...');
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const promises = [];
+                
+                snapshot.forEach(doc => {
+                    promises.push(db.collection('rooms').doc(doc.id).delete());
+                });
+                
+                await Promise.all(promises);
+                showAdminLog(`✅ 已刪除所有房間 (${promises.length}個)`);
+                
+                // 更新房間列表
+                listAllRooms();
+                
+            } catch (error) {
+                console.error("刪除所有房間失敗:", error);
+                showAdminLog('❌ 刪除所有房間失敗: ' + error.message);
+            }
+        }
+
+        async function deleteRoom(roomId) {
+            if (!db) return;
+            
+            if (confirm(`確定要刪除房間 ${roomId} 嗎？`)) {
+                try {
+                    await db.collection('rooms').doc(roomId).delete();
+                    showAdminLog(`✅ 房間 ${roomId} 已刪除`);
+                    
+                    // 更新房間列表
+                    listAllRooms();
+                    
+                } catch (error) {
+                    console.error("刪除房間失敗:", error);
+                    showAdminLog(`❌ 刪除房間 ${roomId} 失敗: ` + error.message);
+                }
+            }
+        }
+
+        // === 工具函數 ===
+        function showMessage(message, type, elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = message;
+                element.className = type === 'success' ? 'success-message' : 
+                                  type === 'error' ? 'error-message' : 
+                                  type === 'info' ? 'info-box' : '';
+            }
+        }
+
+        function showAdminLog(message) {
+            const adminLog = document.getElementById('admin-log');
+            if (adminLog) {
+                adminLog.innerHTML = message;
+            }
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffMs = now - time;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) return `${diffMins}分鐘前`;
+            if (diffHours < 24) return `${diffHours}小時前`;
+            return `${diffDays}天前`;
+        }
+    </script>
+</body>
+</html>
