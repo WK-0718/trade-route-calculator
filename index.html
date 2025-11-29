@@ -121,6 +121,14 @@
             background-color: #e67e22;
         }
         
+        .btn-info {
+            background-color: #3498db;
+        }
+        
+        .btn-info:hover {
+            background-color: #2980b9;
+        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -273,6 +281,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .user-badge {
@@ -392,6 +401,14 @@
             color: #7f8c8d;
         }
 
+        .admin-panel {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #e17055;
+        }
+
         /* 載入動畫 */
         .loading {
             display: inline-block;
@@ -502,7 +519,19 @@
             <div class="room-actions">
                 <button class="btn btn-warning" onclick="leaveRoom()">離開房間</button>
                 <button class="btn btn-danger" onclick="closeRoom()">關閉房間</button>
+                <button class="btn btn-info" onclick="showAdminPanel()">管理房間</button>
             </div>
+        </div>
+
+        <!-- 管理面板 -->
+        <div class="admin-panel" id="admin-panel" style="display: none;">
+            <h4>🔧 房間管理</h4>
+            <div>
+                <button class="btn btn-info" onclick="listAllRooms()">列出所有房間</button>
+                <button class="btn btn-warning" onclick="cleanupOldRooms()">清理舊房間</button>
+                <button class="btn btn-danger" onclick="deleteAllRooms()">刪除所有房間</button>
+            </div>
+            <div id="admin-log" style="margin-top: 10px; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
         </div>
 
         <div class="info-box">
@@ -614,7 +643,7 @@
                 <li>創建房間後，其他用戶可以通過房間代碼加入</li>
                 <li>房間內的數據會實時同步給所有用戶</li>
                 <li>房間創建者可以關閉房間</li>
-                <li>離開房間後可以切換到本地模式</li>
+                <li>管理員可以清理舊房間和測試數據</li>
             </ul>
         </div>
     </div>
@@ -852,7 +881,7 @@
             }
         }
 
-        // 創建房間
+        // 創建房間 - 修復版
         async function createRoom() {
             const roomName = document.getElementById('room-name').value.trim();
             const userName = document.getElementById('user-name').value.trim();
@@ -865,18 +894,29 @@
             const roomId = generateRoomId();
             const userId = generateUserId();
             
+            // 修復：將貿易數據轉換為 Firestore 支持的格式
+            const tradeDataForFirestore = {
+                version: "1.0",
+                lastUpdate: new Date().toISOString(),
+                // 將嵌套數組拆分為多個數組
+                locations: tradeData.map(row => row[0]),
+                buyItems: tradeData.map(row => row[1]),
+                buyPrices: tradeData.map(row => row[2]),
+                sellItems: tradeData.map(row => row[3]),
+                sellPrices: tradeData.map(row => row[4])
+            };
+
             const roomData = {
                 id: roomId,
                 name: roomName,
                 creator: userName,
                 users: [{ id: userId, name: userName }],
-                data: tradeData,
+                tradeData: tradeDataForFirestore, // 使用修復後的數據結構
                 createdAt: new Date().toISOString(),
                 lastActive: new Date().toISOString()
             };
             
             try {
-                // 保存到 Firestore
                 await db.collection('rooms').doc(roomId).set(roomData);
                 
                 currentRoom = roomData;
@@ -889,20 +929,14 @@
                 isInRoom = true;
                 isLocalMode = false;
                 
-                // 保存到本地存儲
                 saveRoomData();
-                
-                // 更新UI
                 showRoomIndicator();
                 hideCreateRoomModal();
                 updateDataSourceIndicator();
-                
-                // 開始監聽房間變化
                 listenToRoomChanges(roomId);
                 
                 showMessage(`✅ 房間 "${roomName}" 創建成功！房間代碼: ${roomId}`, 'success');
                 
-                // 自動複製房間代碼
                 if (navigator.clipboard) {
                     navigator.clipboard.writeText(roomId);
                     showMessage('📋 房間代碼已複製到剪貼板', 'success');
@@ -910,11 +944,11 @@
                 
             } catch (error) {
                 console.error("創建房間失敗:", error);
-                showMessage('❌ 創建房間失敗，請檢查 Firebase 配置', 'error');
+                showMessage('❌ 創建房間失敗: ' + error.message, 'error');
             }
         }
 
-        // 加入房間
+        // 加入房間 - 修復版
         async function joinRoom() {
             const userName = document.getElementById('join-user-name').value.trim();
             const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
@@ -925,7 +959,6 @@
             }
             
             try {
-                // 從 Firestore 獲取房間信息
                 const roomDoc = await db.collection('rooms').doc(roomCode).get();
                 
                 if (!roomDoc.exists) {
@@ -936,8 +969,7 @@
                 const roomData = roomDoc.data();
                 const userId = generateUserId();
                 
-                // 更新用戶列表
-                const updatedUsers = [...roomData.users];
+                const updatedUsers = roomData.users ? [...roomData.users] : [];
                 const existingUserIndex = updatedUsers.findIndex(u => u.name === userName);
                 
                 if (existingUserIndex !== -1) {
@@ -946,7 +978,6 @@
                     updatedUsers.push({ id: userId, name: userName });
                 }
                 
-                // 更新房間
                 await db.collection('rooms').doc(roomCode).update({
                     users: updatedUsers,
                     lastActive: new Date().toISOString()
@@ -966,25 +997,18 @@
                 isInRoom = true;
                 isLocalMode = false;
                 
-                // 保存到本地存儲
                 saveRoomData();
-                
-                // 更新UI
                 showRoomIndicator();
                 hideJoinRoomModal();
                 updateDataSourceIndicator();
-                
-                // 加載房間數據
                 loadRoomData();
-                
-                // 開始監聽房間變化
                 listenToRoomChanges(roomCode);
                 
                 showMessage(`✅ 成功加入房間 "${roomData.name}"！`, 'success');
                 
             } catch (error) {
                 console.error("加入房間失敗:", error);
-                showMessage('❌ 加入房間失敗，請檢查網絡連接', 'error');
+                showMessage('❌ 加入房間失敗: ' + error.message, 'error');
             }
         }
 
@@ -998,26 +1022,38 @@
                 if (doc.exists) {
                     const roomData = doc.data();
                     
-                    // 更新用戶列表
                     if (currentRoom && JSON.stringify(currentRoom.users) !== JSON.stringify(roomData.users)) {
                         currentRoom.users = roomData.users;
                         updateRoomUsersList();
                     }
                     
-                    // 更新房間數據
-                    if (roomData.data && JSON.stringify(roomData.data) !== JSON.stringify(tradeData)) {
-                        roomData.data.forEach((row, index) => {
-                            if (tradeData[index]) {
-                                tradeData[index][2] = row[2];
-                                tradeData[index][3] = row[3];
-                                tradeData[index][4] = row[4];
-                            }
-                        });
+                    if (roomData.tradeData && shouldUpdateTradeData(roomData.tradeData)) {
+                        updateLocalTradeData(roomData.tradeData);
                         renderTradeDataTable();
                         showMessage('🔄 房間數據已更新', 'success');
                     }
+                    
+                    currentRoom.lastActive = roomData.lastActive;
                 }
             });
+        }
+
+        function shouldUpdateTradeData(newTradeData) {
+            if (!currentRoom || !currentRoom.tradeData) return true;
+            return JSON.stringify(newTradeData) !== JSON.stringify(currentRoom.tradeData);
+        }
+
+        function updateLocalTradeData(tradeDataFromFirestore) {
+            // 從 Firestore 格式轉換回本地格式
+            const data = tradeDataFromFirestore;
+            for (let i = 0; i < tradeData.length; i++) {
+                if (data.locations && data.locations[i] === tradeData[i][0]) {
+                    tradeData[i][2] = data.buyPrices[i] || 0;
+                    tradeData[i][3] = data.sellItems[i] || tradeData[i][3];
+                    tradeData[i][4] = data.sellPrices[i] || 0;
+                }
+            }
+            currentRoom.tradeData = tradeDataFromFirestore;
         }
 
         // 離開房間
@@ -1026,7 +1062,6 @@
             
             if (confirm('確定要離開房間嗎？')) {
                 try {
-                    // 從用戶列表中移除
                     const updatedUsers = currentRoom.users.filter(user => user.id !== currentUser.id);
                     
                     if (updatedUsers.length > 0) {
@@ -1035,7 +1070,6 @@
                             lastActive: new Date().toISOString()
                         });
                     } else {
-                        // 如果沒有用戶了，刪除房間
                         await db.collection('rooms').doc(currentRoom.id).delete();
                     }
                     
@@ -1080,70 +1114,107 @@
 
         // 加載房間數據
         function loadRoomData() {
-            if (currentRoom && currentRoom.data) {
-                currentRoom.data.forEach((row, index) => {
-                    if (tradeData[index]) {
-                        tradeData[index][2] = row[2];
-                        tradeData[index][3] = row[3];
-                        tradeData[index][4] = row[4];
-                    }
-                });
+            if (currentRoom && currentRoom.tradeData) {
+                updateLocalTradeData(currentRoom.tradeData);
                 renderTradeDataTable();
             }
         }
 
-        // 加載可用房間列表
-        async function loadAvailableRooms() {
+        // === 管理功能 ===
+        function showAdminPanel() {
+            const panel = document.getElementById('admin-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function listAllRooms() {
+            if (!db) return;
+            
             try {
-                const querySnapshot = await db.collection('rooms').get();
-                const rooms = [];
+                const snapshot = await db.collection('rooms').get();
+                const adminLog = document.getElementById('admin-log');
+                adminLog.innerHTML = '';
                 
-                querySnapshot.forEach((doc) => {
-                    rooms.push(doc.data());
-                });
-                
-                const availableRooms = document.getElementById('available-rooms');
-                availableRooms.innerHTML = '';
-                
-                if (rooms.length === 0) {
-                    availableRooms.innerHTML = '<div class="room-item" style="justify-content: center;">暫無可用房間</div>';
+                if (snapshot.empty) {
+                    adminLog.innerHTML = '📭 沒有找到任何房間';
                     return;
                 }
                 
-                rooms.forEach(room => {
-                    const roomItem = document.createElement('div');
-                    roomItem.className = 'room-item';
-                    
-                    const roomInfo = document.createElement('div');
-                    roomInfo.className = 'room-info';
-                    
-                    const roomName = document.createElement('div');
-                    roomName.className = 'room-name';
-                    roomName.textContent = room.name;
-                    
-                    const roomMeta = document.createElement('div');
-                    roomMeta.className = 'room-meta';
-                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users.length}人 | 創建者: ${room.creator}`;
-                    
-                    roomInfo.appendChild(roomName);
-                    roomInfo.appendChild(roomMeta);
-                    
-                    const joinButton = document.createElement('button');
-                    joinButton.className = 'btn';
-                    joinButton.textContent = '加入';
-                    joinButton.onclick = () => {
-                        document.getElementById('room-code').value = room.id;
-                    };
-                    
-                    roomItem.appendChild(roomInfo);
-                    roomItem.appendChild(joinButton);
-                    
-                    availableRooms.appendChild(roomItem);
+                adminLog.innerHTML = `找到 ${snapshot.size} 個房間:<br>`;
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const userCount = room.users ? room.users.length : 0;
+                    const timeAgo = getTimeAgo(room.lastActive);
+                    adminLog.innerHTML += `🏠 ${room.name} (ID: ${room.id}) - ${userCount}用戶 - ${timeAgo}<br>`;
                 });
                 
             } catch (error) {
-                console.error("加載房間列表失敗:", error);
+                console.error("列出房間失敗:", error);
             }
+        }
+
+        async function cleanupOldRooms() {
+            if (!db) return;
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const now = new Date();
+                let deletedCount = 0;
+                
+                const promises = [];
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const lastActive = new Date(room.lastActive);
+                    const hoursAgo = (now - lastActive) / (1000 * 60 * 60);
+                    
+                    // 刪除24小時未活動的房間
+                    if (hoursAgo > 24) {
+                        promises.push(db.collection('rooms').doc(room.id).delete());
+                        deletedCount++;
+                    }
+                });
+                
+                await Promise.all(promises);
+                const adminLog = document.getElementById('admin-log');
+                adminLog.innerHTML = `✅ 已清理 ${deletedCount} 個舊房間`;
+                
+            } catch (error) {
+                console.error("清理房間失敗:", error);
+            }
+        }
+
+        async function deleteAllRooms() {
+            if (!db) return;
+            
+            if (confirm('⚠️ 確定要刪除所有房間嗎？此操作無法恢復！')) {
+                try {
+                    const snapshot = await db.collection('rooms').get();
+                    const promises = [];
+                    
+                    snapshot.forEach(doc => {
+                        promises.push(db.collection('rooms').doc(doc.id).delete());
+                    });
+                    
+                    await Promise.all(promises);
+                    const adminLog = document.getElementById('admin-log');
+                    adminLog.innerHTML = `✅ 已刪除所有房間 (${promises.length}個)`;
+                    
+                } catch (error) {
+                    console.error("刪除所有房間失敗:", error);
+                }
+            }
+        }
+
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const time = new Date(timestamp);
+            const diffMs = now - time;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            
+            if (diffMins < 60) return `${diffMins}分鐘前`;
+            if (diffHours < 24) return `${diffHours}小時前`;
+            return `${diffDays}天前`;
         }
 
         // === 工具函數 ===
@@ -1177,6 +1248,7 @@
             localStorage.removeItem('currentUser');
             
             document.getElementById('room-indicator').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'none';
             updateDataSourceIndicator();
             
             loadData();
@@ -1212,6 +1284,56 @@
             document.getElementById('join-room-modal').style.display = 'none';
         }
 
+        async function loadAvailableRooms() {
+            if (!db) return;
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const availableRooms = document.getElementById('available-rooms');
+                availableRooms.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    availableRooms.innerHTML = '<div class="room-item" style="justify-content: center;">暫無可用房間</div>';
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const roomItem = document.createElement('div');
+                    roomItem.className = 'room-item';
+                    
+                    const roomInfo = document.createElement('div');
+                    roomInfo.className = 'room-info';
+                    
+                    const roomName = document.createElement('div');
+                    roomName.className = 'room-name';
+                    roomName.textContent = room.name;
+                    
+                    const roomMeta = document.createElement('div');
+                    roomMeta.className = 'room-meta';
+                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users ? room.users.length : 0}人 | 創建者: ${room.creator}`;
+                    
+                    roomInfo.appendChild(roomName);
+                    roomInfo.appendChild(roomMeta);
+                    
+                    const joinButton = document.createElement('button');
+                    joinButton.className = 'btn';
+                    joinButton.textContent = '加入';
+                    joinButton.onclick = () => {
+                        document.getElementById('room-code').value = room.id;
+                    };
+                    
+                    roomItem.appendChild(roomInfo);
+                    roomItem.appendChild(joinButton);
+                    
+                    availableRooms.appendChild(roomItem);
+                });
+                
+            } catch (error) {
+                console.error("加載房間列表失敗:", error);
+            }
+        }
+
         // === 數據保存 ===
         function saveSingleRow(index) {
             try {
@@ -1224,7 +1346,6 @@
                 
                 saveToLocalStorage();
                 
-                // 如果在房間中，更新房間數據
                 if (isInRoom && currentRoom) {
                     updateRoomData();
                 }
@@ -1256,7 +1377,6 @@
                 
                 saveToLocalStorage();
                 
-                // 如果在房間中，更新房間數據
                 if (isInRoom && currentRoom) {
                     updateRoomData();
                 }
@@ -1276,8 +1396,18 @@
             if (!currentRoom || !db) return;
             
             try {
+                const tradeDataForFirestore = {
+                    version: "1.0",
+                    lastUpdate: new Date().toISOString(),
+                    locations: tradeData.map(row => row[0]),
+                    buyItems: tradeData.map(row => row[1]),
+                    buyPrices: tradeData.map(row => row[2]),
+                    sellItems: tradeData.map(row => row[3]),
+                    sellPrices: tradeData.map(row => row[4])
+                };
+
                 await db.collection('rooms').doc(currentRoom.id).update({
-                    data: tradeData,
+                    tradeData: tradeDataForFirestore,
                     lastActive: new Date().toISOString()
                 });
             } catch (error) {
@@ -1326,14 +1456,12 @@
             const calculateText = document.getElementById('calculate-text');
             const calculateLoading = document.getElementById('calculate-loading');
             
-            // 顯示載入狀態
             calculateText.textContent = '計算中...';
             calculateLoading.style.display = 'inline-block';
             
             statusDiv.innerHTML = '⏳ 計算中... 正在分析貿易數據，請稍候';
             resultDiv.innerHTML = '';
             
-            // 使用 setTimeout 讓界面有時間更新
             setTimeout(() => {
                 try {
                     const routes = calculateAllRoutes();
@@ -1344,7 +1472,6 @@
                     statusDiv.innerHTML = '❌ 計算錯誤：' + error.message;
                     resultDiv.innerHTML = '<div class="error-message">計算過程中發生錯誤，請檢查數據輸入是否正確</div>';
                 } finally {
-                    // 恢復按鈕狀態
                     calculateText.textContent = '🚀 開始計算7段路線';
                     calculateLoading.style.display = 'none';
                 }
@@ -1352,7 +1479,6 @@
         }
 
         function calculateAllRoutes() {
-            // 簡化的路線計算邏輯
             const singleRoutes = [];
             tradeData.forEach(route => {
                 const [location, buyItem, buyPrice, sellItem, sellPrice] = route;
@@ -1369,7 +1495,6 @@
                 }
             });
 
-            // 這裡是簡化的計算邏輯，實際應該有更複雜的算法
             const allRoutes = singleRoutes
                 .filter(route => route.yield >= MIN_SEGMENT_YIELD)
                 .sort((a, b) => b.yield - a.yield)
