@@ -26,12 +26,12 @@
             background-color: #f0f2f5;
             color: var(--dark-color);
             line-height: 1.6;
+            padding: 10px;
         }
         
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            padding: 15px;
         }
         
         header {
@@ -64,6 +64,7 @@
         
         .card-body {
             padding: 15px;
+            overflow-x: auto;
         }
         
         .btn {
@@ -99,6 +100,7 @@
         table {
             width: 100%;
             border-collapse: collapse;
+            min-width: 800px;
         }
         
         th, td {
@@ -226,7 +228,7 @@
         
         @media (max-width: 768px) {
             .container {
-                padding: 10px;
+                padding: 5px;
             }
             
             th, td {
@@ -486,30 +488,22 @@
         // 全局變數
         let tradeData = [];
         let lastRefreshTime = null;
-        const MAX_SEGMENTS = 7; // 最大支持7段路線
-        const MIN_SEGMENT_YIELD = 26; // 最低分段收益率要求
+        const MAX_SEGMENTS = 7;
+        const MIN_SEGMENT_YIELD = 26;
 
         // DOM 加載完成後初始化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing app...');
             initializeApp();
-            setupEventListeners();
         });
 
         // 初始化應用
         function initializeApp() {
             console.log('Initializing app...');
             loadTradeData();
+            setupEventListeners();
             updateRefreshTime();
             showToast('大貿易節路線計算機已載入！支持最高7段路線計算。');
-            
-            // 確保數據輸入表格已渲染
-            setTimeout(() => {
-                if (document.getElementById('trade-data-body').children.length === 0) {
-                    console.log('Trade data table is empty, re-rendering...');
-                    renderTradeDataTable();
-                }
-            }, 100);
         }
 
         // 設置事件監聽器
@@ -556,8 +550,6 @@
             const targetTab = document.getElementById(tabId);
             if (targetTab) {
                 targetTab.classList.add('active');
-            } else {
-                console.error('Tab not found:', tabId);
             }
             
             // 設置選中的標籤為活動狀態
@@ -594,50 +586,6 @@
             }
             
             renderTradeDataTable();
-        }
-
-        // 保存所有數據
-        function saveAllData() {
-            console.log('Saving all data...');
-            
-            // 收集所有數據
-            tradeData.forEach((row, index) => {
-                const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
-                const sellItemSelect = document.querySelector(`select[data-index="${index}"][data-type="sell-item"]`);
-                const sellPriceInput = document.querySelector(`input[data-index="${index}"][data-type="sell"]`);
-                
-                if (buyPriceInput) row[2] = parseInt(buyPriceInput.value) || 0;
-                if (sellItemSelect) row[3] = sellItemSelect.value;
-                if (sellPriceInput) row[4] = parseInt(sellPriceInput.value) || 0;
-            });
-            
-            localStorage.setItem('tradeData', JSON.stringify(tradeData));
-            console.log('Data saved to localStorage');
-            showToast('數據已儲存到本地');
-            updateRefreshTime();
-        }
-
-        // 清除所有數據
-        function clearAllData() {
-            if (confirm('確定要清除所有數據嗎？所有價格將重置為0')) {
-                console.log('Clearing all data...');
-                
-                // 將所有價格設為0，但保留地點和物品
-                tradeData = tradeData.map(row => {
-                    return [
-                        row[0], // 地點名稱
-                        row[1], // 買入物品
-                        0,      // 買入價格% 設為0
-                        row[3], // 賣出物品
-                        0       // 賣出價格% 設為0
-                    ];
-                });
-                
-                localStorage.setItem('tradeData', JSON.stringify(tradeData));
-                renderTradeDataTable();
-                showToast('數據已清除，所有價格重置為0');
-                updateRefreshTime();
-            }
         }
 
         // 渲染貿易數據表格
@@ -750,6 +698,50 @@
             localStorage.setItem('tradeData', JSON.stringify(tradeData));
             showToast('數據已儲存');
             updateRefreshTime();
+        }
+
+        // 保存所有數據
+        function saveAllData() {
+            console.log('Saving all data...');
+            
+            // 收集所有數據
+            tradeData.forEach((row, index) => {
+                const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
+                const sellItemSelect = document.querySelector(`select[data-index="${index}"][data-type="sell-item"]`);
+                const sellPriceInput = document.querySelector(`input[data-index="${index}"][data-type="sell"]`);
+                
+                if (buyPriceInput) row[2] = parseInt(buyPriceInput.value) || 0;
+                if (sellItemSelect) row[3] = sellItemSelect.value;
+                if (sellPriceInput) row[4] = parseInt(sellPriceInput.value) || 0;
+            });
+            
+            localStorage.setItem('tradeData', JSON.stringify(tradeData));
+            console.log('Data saved to localStorage');
+            showToast('數據已儲存到本地');
+            updateRefreshTime();
+        }
+
+        // 清除所有數據
+        function clearAllData() {
+            if (confirm('確定要清除所有數據嗎？所有價格將重置為0')) {
+                console.log('Clearing all data...');
+                
+                // 將所有價格設為0，但保留地點和物品
+                tradeData = tradeData.map(row => {
+                    return [
+                        row[0], // 地點名稱
+                        row[1], // 買入物品
+                        0,      // 買入價格% 設為0
+                        row[3], // 賣出物品
+                        0       // 賣出價格% 設為0
+                    ];
+                });
+                
+                localStorage.setItem('tradeData', JSON.stringify(tradeData));
+                renderTradeDataTable();
+                showToast('數據已清除，所有價格重置為0');
+                updateRefreshTime();
+            }
         }
 
         // 計算所有可能的貿易路線（最高7段）
@@ -1158,13 +1150,6 @@
                     toast.classList.remove('show');
                 }, 3000);
             }
-        }
-
-        // 確保頁面加載完成後初始化
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initializeApp);
-        } else {
-            initializeApp();
         }
     </script>
 </body>
