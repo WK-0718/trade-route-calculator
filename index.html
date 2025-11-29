@@ -401,14 +401,6 @@
             color: #7f8c8d;
         }
 
-        .admin-panel {
-            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 2px solid #e17055;
-        }
-
         /* 載入動畫 */
         .loading {
             display: inline-block;
@@ -552,11 +544,9 @@
             <div class="room-actions">
                 <button class="btn btn-warning" onclick="leaveRoom()">離開房間</button>
                 <button class="btn btn-danger" id="close-room-btn" onclick="closeRoom()" style="display: none;">關閉房間</button>
-                <!-- 已移除管理房間按鈕 -->
             </div>
         </div>
 
-        <!-- 管理面板 - 已移除 -->
         <div class="info-box">
                 <strong>📖 使用說明：</strong> 
             <ol>
@@ -565,6 +555,8 @@
                 <li>不加入房間，所有數據只有自己可看見。</li>
                 <li>輸入買入和賣出價格%，選擇賣出物品，點擊"開始計算7段路線"。</li>
                 <li>只有房間創建者可以關閉房間。</li>
+                <li>房間在24小時無活動後會自動刪除</li>
+                <li>右下角有電腦圖標,點擊可切換電腦介面。(可縮放介面)</li>
             </ol>
             <div style="margin-top: 10px;">
                 <button class="btn" onclick="showCreateRoomModal()">🏠 創建房間</button>
@@ -739,13 +731,13 @@
         let isLocalMode = true;
         let roomUnsubscribe = null;
         let isDesktopView = false;
+        let cleanupInterval = null;
 
         // === 初始化應用 ===
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 初始化大貿易節路線計算機...");
             initializeApp();
             setupViewToggle();
-            checkAndCleanupOldRooms();
         });
 
         function initializeApp() {
@@ -755,6 +747,72 @@
             
             // 檢查是否有保存的房間信息
             checkRoomStatus();
+            
+            // 啟動定期清理任務
+            startAutoCleanup();
+        }
+
+        // === 自動清理功能 ===
+        function startAutoCleanup() {
+            // 每小時檢查一次舊房間
+            cleanupInterval = setInterval(checkAndCleanupOldRooms, 60 * 60 * 1000);
+            
+            // 頁面加載時立即檢查一次
+            checkAndCleanupOldRooms();
+            
+            console.log("✅ 自動清理任務已啟動，每小時檢查一次舊房間");
+        }
+
+        // 自動清理舊房間
+        async function checkAndCleanupOldRooms() {
+            if (!db) {
+                console.log("❌ Firebase 未初始化，跳過清理");
+                return;
+            }
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const now = new Date();
+                let deletedCount = 0;
+                
+                const promises = [];
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const lastActive = new Date(room.lastActive);
+                    const hoursAgo = (now - lastActive) / (1000 * 60 * 60);
+                    
+                    // 刪除24小時未活動的房間
+                    if (hoursAgo > 24) {
+                        promises.push(db.collection('rooms').doc(room.id).delete());
+                        deletedCount++;
+                        console.log(`🗑️ 計劃刪除房間: ${room.name} (${room.id}), 最後活動: ${hoursAgo.toFixed(1)} 小時前`);
+                    }
+                });
+                
+                if (promises.length > 0) {
+                    await Promise.all(promises);
+                    console.log(`✅ 自動清理了 ${deletedCount} 個舊房間`);
+                    
+                    // 如果當前用戶在已刪除的房間中，強制退出
+                    if (currentRoom && deletedCount > 0) {
+                        const currentRoomStillExists = snapshot.docs.some(doc => 
+                            doc.id === currentRoom.id && 
+                            (now - new Date(doc.data().lastActive)) / (1000 * 60 * 60) <= 24
+                        );
+                        
+                        if (!currentRoomStillExists) {
+                            console.log("⚠️ 當前房間已被自動清理，強制退出");
+                            clearRoomData();
+                            showMessage('⚠️ 房間因24小時無活動已被自動刪除', 'error');
+                        }
+                    }
+                } else {
+                    console.log("✅ 沒有需要清理的舊房間");
+                }
+                
+            } catch (error) {
+                console.error("❌ 自動清理房間失敗:", error);
+            }
         }
 
         // === 介面切換功能 ===
@@ -1109,6 +1167,11 @@
                     }
                     
                     currentRoom.lastActive = roomData.lastActive;
+                } else {
+                    // 房間已被刪除
+                    console.log("⚠️ 房間已被刪除");
+                    clearRoomData();
+                    showMessage('⚠️ 房間已被刪除', 'error');
                 }
             });
         }
@@ -1294,7 +1357,14 @@
                     
                     const roomMeta = document.createElement('div');
                     roomMeta.className = 'room-meta';
-                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users ? room.users.length : 0}人 | 創建者: ${room.creator}`;
+                    
+                    // 計算房間活躍時間
+                    const lastActive = new Date(room.lastActive);
+                    const now = new Date();
+                    const hoursAgo = Math.floor((now - lastActive) / (1000 * 60 * 60));
+                    const timeLeft = 24 - hoursAgo;
+                    
+                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users ? room.users.length : 0}人 | ${timeLeft > 0 ? `剩餘${timeLeft}小時` : '即將刪除'}`;
                     
                     roomInfo.appendChild(roomName);
                     roomInfo.appendChild(roomMeta);
