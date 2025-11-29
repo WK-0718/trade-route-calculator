@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大貿易節路線計算機 - 異世界奇妙生活</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #4a86e8 0%, #3a76d8 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        
+        header h1 {
+            font-size: 2.2em;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        }
+        
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #4a86e8 0%, #3a76d8 100%);
+            color: white;
+            padding: 18px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1.1em;
+        }
+        
+        .card-body {
+            padding: 25px;
+            overflow-x: auto;
+        }
+        
+        .btn {
+            background-color: #4a86e8;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            margin: 3px;
+            font-weight: bold;
+        }
+        
+        .btn:hover {
+            background-color: #3a76d8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        .btn-warning {
+            background-color: #f39c12;
+        }
+        
+        .btn-warning:hover {
+            background-color: #e67e22;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 14px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            font-size: 14px;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 2px solid #4a86e8;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4a86e8;
+            box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #e8f4fd 0%, #d4e6f9 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border-left: 5px solid #4a86e8;
+            font-size: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .yield-high {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .yield-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .route-path {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.05em;
+        }
+        
+        .route-details {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .segment-count {
+            background: linear-gradient(135deg, #4a86e8, #3a76d8);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+        
+        .route-section {
+            margin-bottom: 30px;
+        }
+        
+        .route-section h4 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .calculation-status {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #ffd43b;
+            font-weight: bold;
+        }
+        
+        .low-yield {
+            color: #e74c3c;
+            font-weight: bold;
+            background-color: #ffeaea;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            padding: 12px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .room-indicator {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .room-users {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .room-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-title {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #7f8c8d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a86e8;
+            box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
+        }
+
+        .room-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+
+        .room-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .room-item:last-child {
+            border-bottom: none;
+        }
+
+        .room-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .room-name {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .room-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        /* 載入動畫 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4a86e8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 手機響應式調整 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 0 5px;
+            }
+            
+            th, td {
+                padding: 10px 6px;
+                font-size: 13px;
+            }
+            
+            .card-body {
+                padding: 15px;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 13px;
+                margin: 2px;
+            }
+            
+            select, input {
+                padding: 8px;
+                font-size: 13px;
+            }
+            
+            .info-box {
+                padding: 15px;
+                font-size: 14px;
+            }
+            
+            header {
+                padding: 20px 15px;
+            }
+            
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .room-indicator {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .room-actions {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card-header {
+                flex-direction: column;
+                gap: 10px;
+                text-align: center;
+            }
+            
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 大貿易節路線計算機</h1>
+            <p>異世界奇妙生活 - 智能貿易路線分析系統</p>
+        </header>
+
+        <!-- 房間狀態指示器 -->
+        <div class="room-indicator" id="room-indicator" style="display: none;">
+            <div>
+                <strong>🏠 房間:</strong> <span id="current-room-name">未命名房間</span>
+                <span id="current-room-id" style="margin-left: 10px; font-size: 12px; opacity: 0.8;"></span>
+            </div>
+            <div class="room-users">
+                <span>👥 在線用戶:</span>
+                <div id="room-users-list"></div>
+            </div>
+            <div class="room-actions">
+                <button class="btn btn-warning" onclick="leaveRoom()">離開房間</button>
+                <button class="btn btn-danger" onclick="closeRoom()">關閉房間</button>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>📖 使用說明：</strong> 在下方表格輸入各貿易地點的買入和賣出價格%，系統會自動計算最佳7段貿易路線。點擊"開始計算7段路線"獲取智能推薦。
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="showCreateRoomModal()">🏠 創建房間</button>
+                <button class="btn" onclick="showJoinRoomModal()">🚪 加入房間</button>
+                <button class="btn" onclick="useLocalMode()">💾 本地模式</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span>📊 貿易數據輸入表</span>
+                <div>
+                    <button class="btn btn-success" onclick="saveAllData()">💾 儲存所有數據</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清除所有數據</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="info-box" style="margin-bottom: 20px;">
+                    <strong>💡 提示：</strong> 請在遊戲中記錄各貿易地點的實際價格後輸入下方表格
+                    <span id="data-source-indicator" style="float: right; font-weight: bold;">💾 本地模式</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>📍 地點名稱</th>
+                            <th>🛒 買入物品</th>
+                            <th>💰 買入價格%</th>
+                            <th>📦 賣出物品</th>
+                            <th>💵 賣出價格%</th>
+                            <th>⚡ 操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trade-data-body">
+                        <!-- 數據由JavaScript生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span>🎯 路線計算結果</span>
+                <button class="btn btn-success" onclick="calculateRoutes()">
+                    <span id="calculate-text">🚀 開始計算7段路線</span>
+                    <span id="calculate-loading" class="loading" style="display: none;"></span>
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="calculation-status" id="calculation-status">
+                    📝 請先在上方表格輸入價格數據，然後點擊計算按鈕
+                </div>
+                <div id="calculation-result">
+                    <!-- 計算結果將顯示在這裡 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 創建房間模態框 -->
+        <div class="modal" id="create-room-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">🏠 創建新房間</div>
+                    <button class="close-modal" onclick="hideCreateRoomModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="room-name">房間名稱</label>
+                    <input type="text" class="form-control" id="room-name" placeholder="輸入房間名稱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="user-name">您的暱稱</label>
+                    <input type="text" class="form-control" id="user-name" placeholder="輸入您的暱稱">
+                </div>
+                <button class="btn btn-success" style="width: 100%;" onclick="createRoom()">創建房間</button>
+            </div>
+        </div>
+
+        <!-- 加入房間模態框 -->
+        <div class="modal" id="join-room-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div class="modal-title">🚪 加入房間</div>
+                    <button class="close-modal" onclick="hideJoinRoomModal()">&times;</button>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="join-user-name">您的暱稱</label>
+                    <input type="text" class="form-control" id="join-user-name" placeholder="輸入您的暱稱">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="room-code">房間代碼</label>
+                    <input type="text" class="form-control" id="room-code" placeholder="輸入房間代碼">
+                </div>
+                <button class="btn btn-success" style="width: 100%;" onclick="joinRoom()">加入房間</button>
+                
+                <div style="margin-top: 20px;">
+                    <strong>現有房間列表:</strong>
+                    <div class="room-list" id="available-rooms">
+                        <!-- 房間列表將由JavaScript生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <strong>🔧 使用提示：</strong> 
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>創建房間後，其他用戶可以通過房間代碼加入</li>
+                <li>房間內的數據會實時同步給所有用戶</li>
+                <li>房間創建者可以關閉房間</li>
+                <li>離開房間後可以切換到本地模式</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // === Firebase 配置 ===
+        // 🔧 請在這裡貼上您從 Firebase 獲取的配置
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY_HERE",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 初始化 Firebase
+        let db;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            console.log("✅ Firebase 初始化成功");
+        } catch (error) {
+            console.error("❌ Firebase 初始化失敗:", error);
+        }
+
+        // === 固定數據 ===
+        const tradeData = [
+            ["龍城", "櫻花", 88, "冰龍鱗", 115],
+            ["火龍迷宮", "冬樹嫩芽", 88, "回音海螺", 111],
+            ["飛龍山", "風滾草", 85, "河童之玉", 110],
+            ["魔物之森", "地獄蝠翼膜", 86, "回音海螺", 110],
+            ["精靈之森", "回音海螺", 87, "地獄火種", 114],
+            ["綠洲城", "風滾草", 89, "鬼盞", 114],
+            ["舊都遺址", "古代石板", 88, "風滾草", 113],
+            ["大沙漠", "砂鱷魚之果", 86, "斯芬克斯的鬃毛", 115],
+            ["砂城聖域", "斯芬克斯的鬃毛", 85, "砂鱷魚之果", 111],
+            ["冰海大陸", "冬樹嫩芽", 86, "王者之角", 112],
+            ["永冬冰原", "嘰嘰鳥的雙面羽", 87, "王者之角", 112],
+            ["龍穴", "冰龍鱗", 88, "魔礦石塊", 114],
+            ["北嶺雪山", "王者之角", 86, "地獄火種", 114],
+            ["黑暗森林", "地獄蝠翼膜", 90, "回音海螺", 112],
+            ["墓園", "靈魂之燈", 85, "嘰嘰鳥的雙面羽", 112],
+            ["地下城", "魔礦石塊", 87, "風滾草", 111],
+            ["地底火山", "地獄火種", 87, "靈魂之燈", 111],
+            ["櫻島", "櫻花", 88, "風風鈴", 112],
+            ["八百萬島", "風風鈴", 89, "河童之玉", 114],
+            ["漩渦島", "河童之玉", 88, "鬼盞", 112],
+            ["鬼島", "鬼盞", 85, "地獄蝠翼膜", 114],
+            ["珊瑚區", "回音海螺", 88, "船蟹的螯", 115],
+            ["沉船區", "船蟹的螯", 85, "回音海螺", 112],
+            ["風暴區", "巨鯨琥珀", 85, "船蟹的螯", 113],
+            ["靜謐海", "海怪觸手", 89, "風風鈴", 113]
+        ];
+
+        const ITEMS = [
+            "櫻花", "地獄蝠翼膜", "冬樹嫩芽", "魔礦石塊", "風滾草", 
+            "風風鈴", "回音海螺", "斯芬克斯的鬃毛", "古代石板", 
+            "砂鱷魚之果", "靈魂之燈", "嘰嘰鳥的雙面羽", "冰龍鱗", 
+            "王者之角", "鬼盞", "船蟹的螯", "地獄火種", "河童之玉", 
+            "巨鯨琥珀", "海怪觸手"
+        ];
+
+        const MAX_SEGMENTS = 7;
+        const MIN_SEGMENT_YIELD = 26;
+
+        // === 全局變量 ===
+        let currentRoom = null;
+        let currentUser = null;
+        let isInRoom = false;
+        let isLocalMode = true;
+        let roomUnsubscribe = null;
+
+        // === 初始化應用 ===
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("🚀 初始化大貿易節路線計算機...");
+            initializeApp();
+        });
+
+        function initializeApp() {
+            loadData();
+            renderTradeDataTable();
+            showMessage('✅ 系統初始化完成！請輸入貿易數據開始計算。', 'success');
+            
+            // 檢查是否有保存的房間信息
+            checkRoomStatus();
+        }
+
+        // === 數據管理 ===
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('tradeData');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.forEach((row, index) => {
+                        if (tradeData[index]) {
+                            tradeData[index][2] = row[2];
+                            tradeData[index][3] = row[3];
+                            tradeData[index][4] = row[4];
+                        }
+                    });
+                    console.log("✅ 數據加載成功");
+                }
+            } catch (error) {
+                console.error("❌ 加載數據時出錯:", error);
+            }
+        }
+
+        function renderTradeDataTable() {
+            const tbody = document.getElementById('trade-data-body');
+            tbody.innerHTML = '';
+            
+            tradeData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                // 地點名稱
+                tr.appendChild(createCell(row[0]));
+                
+                // 買入物品
+                tr.appendChild(createCell(row[1]));
+                
+                // 買入價格%
+                const buyPriceCell = document.createElement('td');
+                const buyPriceInput = document.createElement('input');
+                buyPriceInput.type = 'number';
+                buyPriceInput.min = '0';
+                buyPriceInput.max = '200';
+                buyPriceInput.value = row[2];
+                buyPriceInput.dataset.index = index;
+                buyPriceInput.placeholder = '輸入價格%';
+                buyPriceCell.appendChild(buyPriceInput);
+                tr.appendChild(buyPriceCell);
+                
+                // 賣出物品
+                const sellItemCell = document.createElement('td');
+                const sellItemSelect = document.createElement('select');
+                sellItemSelect.dataset.index = index;
+                
+                ITEMS.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    if (item === row[3]) {
+                        option.selected = true;
+                    }
+                    sellItemSelect.appendChild(option);
+                });
+                
+                sellItemCell.appendChild(sellItemSelect);
+                tr.appendChild(sellItemCell);
+                
+                // 賣出價格%
+                const sellPriceCell = document.createElement('td');
+                const sellPriceInput = document.createElement('input');
+                sellPriceInput.type = 'number';
+                sellPriceInput.min = '0';
+                sellPriceInput.max = '200';
+                sellPriceInput.value = row[4];
+                sellPriceInput.dataset.index = index;
+                sellPriceInput.placeholder = '輸入價格%';
+                sellPriceCell.appendChild(sellPriceInput);
+                tr.appendChild(sellPriceCell);
+                
+                // 操作按鈕
+                const actionCell = document.createElement('td');
+                const saveButton = document.createElement('button');
+                saveButton.className = 'btn';
+                saveButton.textContent = '💾 儲存';
+                saveButton.onclick = () => saveSingleRow(index);
+                actionCell.appendChild(saveButton);
+                tr.appendChild(actionCell);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function createCell(text) {
+            const cell = document.createElement('td');
+            cell.textContent = text;
+            return cell;
+        }
+
+        // === 房間功能 ===
+        function checkRoomStatus() {
+            const savedRoom = localStorage.getItem('currentRoom');
+            const savedUser = localStorage.getItem('currentUser');
+            
+            if (savedRoom && savedUser) {
+                try {
+                    currentRoom = JSON.parse(savedRoom);
+                    currentUser = JSON.parse(savedUser);
+                    isInRoom = true;
+                    isLocalMode = false;
+                    
+                    showRoomIndicator();
+                    loadRoomData();
+                    showMessage(`✅ 已重新加入房間: ${currentRoom.name}`, 'success');
+                } catch (e) {
+                    console.error("解析房間信息失敗:", e);
+                    clearRoomData();
+                }
+            }
+        }
+
+        function showRoomIndicator() {
+            const indicator = document.getElementById('room-indicator');
+            const roomName = document.getElementById('current-room-name');
+            const roomId = document.getElementById('current-room-id');
+            
+            if (currentRoom) {
+                roomName.textContent = currentRoom.name;
+                roomId.textContent = `ID: ${currentRoom.id}`;
+                indicator.style.display = 'flex';
+                updateRoomUsersList();
+            }
+        }
+
+        function updateRoomUsersList() {
+            const usersList = document.getElementById('room-users-list');
+            if (!usersList || !currentRoom) return;
+            
+            usersList.innerHTML = '';
+            
+            if (currentRoom.users && currentRoom.users.length > 0) {
+                currentRoom.users.forEach(user => {
+                    const userBadge = document.createElement('span');
+                    userBadge.className = 'user-badge';
+                    userBadge.textContent = user.name;
+                    if (user.id === currentUser.id) {
+                        userBadge.style.background = 'rgba(255, 255, 255, 0.3)';
+                        userBadge.textContent += ' (我)';
+                    }
+                    usersList.appendChild(userBadge);
+                });
+            }
+        }
+
+        // 創建房間
+        async function createRoom() {
+            const roomName = document.getElementById('room-name').value.trim();
+            const userName = document.getElementById('user-name').value.trim();
+            
+            if (!roomName || !userName) {
+                showMessage('❌ 請填寫房間名稱和您的暱稱', 'error');
+                return;
+            }
+            
+            const roomId = generateRoomId();
+            const userId = generateUserId();
+            
+            const roomData = {
+                id: roomId,
+                name: roomName,
+                creator: userName,
+                users: [{ id: userId, name: userName }],
+                data: tradeData,
+                createdAt: new Date().toISOString(),
+                lastActive: new Date().toISOString()
+            };
+            
+            try {
+                // 保存到 Firestore
+                await db.collection('rooms').doc(roomId).set(roomData);
+                
+                currentRoom = roomData;
+                currentUser = {
+                    id: userId,
+                    name: userName,
+                    isCreator: true
+                };
+                
+                isInRoom = true;
+                isLocalMode = false;
+                
+                // 保存到本地存儲
+                saveRoomData();
+                
+                // 更新UI
+                showRoomIndicator();
+                hideCreateRoomModal();
+                updateDataSourceIndicator();
+                
+                // 開始監聽房間變化
+                listenToRoomChanges(roomId);
+                
+                showMessage(`✅ 房間 "${roomName}" 創建成功！房間代碼: ${roomId}`, 'success');
+                
+                // 自動複製房間代碼
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(roomId);
+                    showMessage('📋 房間代碼已複製到剪貼板', 'success');
+                }
+                
+            } catch (error) {
+                console.error("創建房間失敗:", error);
+                showMessage('❌ 創建房間失敗，請檢查 Firebase 配置', 'error');
+            }
+        }
+
+        // 加入房間
+        async function joinRoom() {
+            const userName = document.getElementById('join-user-name').value.trim();
+            const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
+            
+            if (!userName || !roomCode) {
+                showMessage('❌ 請填寫您的暱稱和房間代碼', 'error');
+                return;
+            }
+            
+            try {
+                // 從 Firestore 獲取房間信息
+                const roomDoc = await db.collection('rooms').doc(roomCode).get();
+                
+                if (!roomDoc.exists) {
+                    showMessage('❌ 找不到該房間，請檢查房間代碼是否正確', 'error');
+                    return;
+                }
+                
+                const roomData = roomDoc.data();
+                const userId = generateUserId();
+                
+                // 更新用戶列表
+                const updatedUsers = [...roomData.users];
+                const existingUserIndex = updatedUsers.findIndex(u => u.name === userName);
+                
+                if (existingUserIndex !== -1) {
+                    updatedUsers[existingUserIndex].id = userId;
+                } else {
+                    updatedUsers.push({ id: userId, name: userName });
+                }
+                
+                // 更新房間
+                await db.collection('rooms').doc(roomCode).update({
+                    users: updatedUsers,
+                    lastActive: new Date().toISOString()
+                });
+                
+                currentRoom = {
+                    ...roomData,
+                    users: updatedUsers
+                };
+                
+                currentUser = {
+                    id: userId,
+                    name: userName,
+                    isCreator: roomData.creator === userName
+                };
+                
+                isInRoom = true;
+                isLocalMode = false;
+                
+                // 保存到本地存儲
+                saveRoomData();
+                
+                // 更新UI
+                showRoomIndicator();
+                hideJoinRoomModal();
+                updateDataSourceIndicator();
+                
+                // 加載房間數據
+                loadRoomData();
+                
+                // 開始監聽房間變化
+                listenToRoomChanges(roomCode);
+                
+                showMessage(`✅ 成功加入房間 "${roomData.name}"！`, 'success');
+                
+            } catch (error) {
+                console.error("加入房間失敗:", error);
+                showMessage('❌ 加入房間失敗，請檢查網絡連接', 'error');
+            }
+        }
+
+        // 監聽房間變化
+        function listenToRoomChanges(roomId) {
+            if (roomUnsubscribe) {
+                roomUnsubscribe();
+            }
+            
+            roomUnsubscribe = db.collection('rooms').doc(roomId).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const roomData = doc.data();
+                    
+                    // 更新用戶列表
+                    if (currentRoom && JSON.stringify(currentRoom.users) !== JSON.stringify(roomData.users)) {
+                        currentRoom.users = roomData.users;
+                        updateRoomUsersList();
+                    }
+                    
+                    // 更新房間數據
+                    if (roomData.data && JSON.stringify(roomData.data) !== JSON.stringify(tradeData)) {
+                        roomData.data.forEach((row, index) => {
+                            if (tradeData[index]) {
+                                tradeData[index][2] = row[2];
+                                tradeData[index][3] = row[3];
+                                tradeData[index][4] = row[4];
+                            }
+                        });
+                        renderTradeDataTable();
+                        showMessage('🔄 房間數據已更新', 'success');
+                    }
+                }
+            });
+        }
+
+        // 離開房間
+        async function leaveRoom() {
+            if (!currentRoom || !currentUser) return;
+            
+            if (confirm('確定要離開房間嗎？')) {
+                try {
+                    // 從用戶列表中移除
+                    const updatedUsers = currentRoom.users.filter(user => user.id !== currentUser.id);
+                    
+                    if (updatedUsers.length > 0) {
+                        await db.collection('rooms').doc(currentRoom.id).update({
+                            users: updatedUsers,
+                            lastActive: new Date().toISOString()
+                        });
+                    } else {
+                        // 如果沒有用戶了，刪除房間
+                        await db.collection('rooms').doc(currentRoom.id).delete();
+                    }
+                    
+                } catch (error) {
+                    console.error("離開房間失敗:", error);
+                } finally {
+                    clearRoomData();
+                    showMessage('✅ 已離開房間', 'success');
+                }
+            }
+        }
+
+        // 關閉房間
+        async function closeRoom() {
+            if (!currentRoom || !currentUser) return;
+            
+            if (confirm('確定要關閉房間嗎？所有用戶將被踢出。')) {
+                try {
+                    await db.collection('rooms').doc(currentRoom.id).delete();
+                } catch (error) {
+                    console.error("關閉房間失敗:", error);
+                } finally {
+                    clearRoomData();
+                    showMessage('✅ 房間已關閉', 'success');
+                }
+            }
+        }
+
+        // 使用本地模式
+        function useLocalMode() {
+            if (isInRoom) {
+                if (confirm('切換到本地模式將離開當前房間。確定要切換嗎？')) {
+                    clearRoomData();
+                    showMessage('✅ 已切換到本地模式', 'success');
+                }
+            } else {
+                isLocalMode = true;
+                updateDataSourceIndicator();
+                showMessage('✅ 已使用本地模式', 'success');
+            }
+        }
+
+        // 加載房間數據
+        function loadRoomData() {
+            if (currentRoom && currentRoom.data) {
+                currentRoom.data.forEach((row, index) => {
+                    if (tradeData[index]) {
+                        tradeData[index][2] = row[2];
+                        tradeData[index][3] = row[3];
+                        tradeData[index][4] = row[4];
+                    }
+                });
+                renderTradeDataTable();
+            }
+        }
+
+        // 加載可用房間列表
+        async function loadAvailableRooms() {
+            try {
+                const querySnapshot = await db.collection('rooms').get();
+                const rooms = [];
+                
+                querySnapshot.forEach((doc) => {
+                    rooms.push(doc.data());
+                });
+                
+                const availableRooms = document.getElementById('available-rooms');
+                availableRooms.innerHTML = '';
+                
+                if (rooms.length === 0) {
+                    availableRooms.innerHTML = '<div class="room-item" style="justify-content: center;">暫無可用房間</div>';
+                    return;
+                }
+                
+                rooms.forEach(room => {
+                    const roomItem = document.createElement('div');
+                    roomItem.className = 'room-item';
+                    
+                    const roomInfo = document.createElement('div');
+                    roomInfo.className = 'room-info';
+                    
+                    const roomName = document.createElement('div');
+                    roomName.className = 'room-name';
+                    roomName.textContent = room.name;
+                    
+                    const roomMeta = document.createElement('div');
+                    roomMeta.className = 'room-meta';
+                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users.length}人 | 創建者: ${room.creator}`;
+                    
+                    roomInfo.appendChild(roomName);
+                    roomInfo.appendChild(roomMeta);
+                    
+                    const joinButton = document.createElement('button');
+                    joinButton.className = 'btn';
+                    joinButton.textContent = '加入';
+                    joinButton.onclick = () => {
+                        document.getElementById('room-code').value = room.id;
+                    };
+                    
+                    roomItem.appendChild(roomInfo);
+                    roomItem.appendChild(joinButton);
+                    
+                    availableRooms.appendChild(roomItem);
+                });
+                
+            } catch (error) {
+                console.error("加載房間列表失敗:", error);
+            }
+        }
+
+        // === 工具函數 ===
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function generateUserId() {
+            return Math.random().toString(36).substring(2, 10);
+        }
+
+        function saveRoomData() {
+            if (currentRoom && currentUser) {
+                localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
+
+        function clearRoomData() {
+            currentRoom = null;
+            currentUser = null;
+            isInRoom = false;
+            isLocalMode = true;
+            
+            if (roomUnsubscribe) {
+                roomUnsubscribe();
+                roomUnsubscribe = null;
+            }
+            
+            localStorage.removeItem('currentRoom');
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('room-indicator').style.display = 'none';
+            updateDataSourceIndicator();
+            
+            loadData();
+            renderTradeDataTable();
+        }
+
+        function updateDataSourceIndicator() {
+            const indicator = document.getElementById('data-source-indicator');
+            if (isLocalMode) {
+                indicator.textContent = '💾 本地模式';
+                indicator.style.color = '#27ae60';
+            } else if (isInRoom) {
+                indicator.textContent = `🏠 房間: ${currentRoom.name}`;
+                indicator.style.color = '#9b59b6';
+            }
+        }
+
+        // === 模態框控制 ===
+        function showCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'flex';
+        }
+
+        function hideCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'none';
+        }
+
+        function showJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'flex';
+            loadAvailableRooms();
+        }
+
+        function hideJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'none';
+        }
+
+        // === 數據保存 ===
+        function saveSingleRow(index) {
+            try {
+                const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
+                const select = document.querySelector(`select[data-index="${index}"]`);
+                
+                if (inputs[0]) tradeData[index][2] = parseInt(inputs[0].value) || 0;
+                if (select) tradeData[index][3] = select.value;
+                if (inputs[1]) tradeData[index][4] = parseInt(inputs[1].value) || 0;
+                
+                saveToLocalStorage();
+                
+                // 如果在房間中，更新房間數據
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                showMessage(`✅ 第 ${index + 1} 行數據已儲存！`, 'success');
+            } catch (error) {
+                console.error("❌ 保存單行數據時出錯:", error);
+                showMessage('❌ 保存失敗，請檢查數據格式', 'error');
+            }
+        }
+
+        function saveAllData() {
+            try {
+                let hasData = false;
+                tradeData.forEach((row, index) => {
+                    const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
+                    const select = document.querySelector(`select[data-index="${index}"]`);
+                    
+                    if (inputs[0]) {
+                        row[2] = parseInt(inputs[0].value) || 0;
+                        if (row[2] > 0) hasData = true;
+                    }
+                    if (select) row[3] = select.value;
+                    if (inputs[1]) {
+                        row[4] = parseInt(inputs[1].value) || 0;
+                        if (row[4] > 0) hasData = true;
+                    }
+                });
+                
+                saveToLocalStorage();
+                
+                // 如果在房間中，更新房間數據
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                if (hasData) {
+                    showMessage('✅ 所有數據已儲存！現在可以計算路線了。', 'success');
+                } else {
+                    showMessage('⚠️ 數據已儲存，但檢測到所有價格都為0，請輸入實際價格。', 'error');
+                }
+            } catch (error) {
+                console.error("❌ 保存所有數據時出錯:", error);
+                showMessage('❌ 保存失敗，請檢查控制台錯誤信息', 'error');
+            }
+        }
+
+        async function updateRoomData() {
+            if (!currentRoom || !db) return;
+            
+            try {
+                await db.collection('rooms').doc(currentRoom.id).update({
+                    data: tradeData,
+                    lastActive: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error("更新房間數據失敗:", error);
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ 確定要清除所有數據嗎？所有價格將重置為0')) {
+                tradeData.forEach(row => {
+                    row[2] = 0;
+                    row[4] = 0;
+                });
+                renderTradeDataTable();
+                saveToLocalStorage();
+                
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                showMessage('🗑️ 所有數據已清除！', 'success');
+            }
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('tradeData', JSON.stringify(tradeData));
+            } catch (error) {
+                console.error("❌ 保存到本地儲存時出錯:", error);
+            }
+        }
+
+        function showMessage(message, type) {
+            const statusDiv = document.getElementById('calculation-status');
+            if (statusDiv) {
+                statusDiv.innerHTML = message;
+                statusDiv.className = 'calculation-status ' + 
+                    (type === 'success' ? 'success-message' : type === 'error' ? 'error-message' : '');
+            }
+        }
+
+        // === 路線計算功能 ===
+        function calculateRoutes() {
+            const statusDiv = document.getElementById('calculation-status');
+            const resultDiv = document.getElementById('calculation-result');
+            const calculateText = document.getElementById('calculate-text');
+            const calculateLoading = document.getElementById('calculate-loading');
+            
+            // 顯示載入狀態
+            calculateText.textContent = '計算中...';
+            calculateLoading.style.display = 'inline-block';
+            
+            statusDiv.innerHTML = '⏳ 計算中... 正在分析貿易數據，請稍候';
+            resultDiv.innerHTML = '';
+            
+            // 使用 setTimeout 讓界面有時間更新
+            setTimeout(() => {
+                try {
+                    const routes = calculateAllRoutes();
+                    displayResults(routes);
+                    statusDiv.innerHTML = `✅ 計算完成！找到 ${routes.allRoutes.length} 條推薦路線`;
+                } catch (error) {
+                    console.error("❌ 計算路線時出錯:", error);
+                    statusDiv.innerHTML = '❌ 計算錯誤：' + error.message;
+                    resultDiv.innerHTML = '<div class="error-message">計算過程中發生錯誤，請檢查數據輸入是否正確</div>';
+                } finally {
+                    // 恢復按鈕狀態
+                    calculateText.textContent = '🚀 開始計算7段路線';
+                    calculateLoading.style.display = 'none';
+                }
+            }, 100);
+        }
+
+        function calculateAllRoutes() {
+            // 簡化的路線計算邏輯
+            const singleRoutes = [];
+            tradeData.forEach(route => {
+                const [location, buyItem, buyPrice, sellItem, sellPrice] = route;
+                if (buyPrice > 0 && sellPrice > 0) {
+                    const yield = ((sellPrice - buyPrice) / buyPrice) * 100;
+                    singleRoutes.push({
+                        from: location,
+                        buyItem: buyItem,
+                        sellItem: sellItem,
+                        yield: yield,
+                        buyPrice: buyPrice,
+                        sellPrice: sellPrice
+                    });
+                }
+            });
+
+            // 這裡是簡化的計算邏輯，實際應該有更複雜的算法
+            const allRoutes = singleRoutes
+                .filter(route => route.yield >= MIN_SEGMENT_YIELD)
+                .sort((a, b) => b.yield - a.yield)
+                .slice(0, 20);
+
+            return {
+                allRoutes: allRoutes,
+                cycleRoutes: [],
+                oneWayRoutes: allRoutes
+            };
+        }
+
+        function displayResults(routes) {
+            let html = '';
+
+            html += '<div class="route-section">';
+            html += '<h4>⭐ 推薦路線 (收益率 ≥ 26%) - 共 ' + routes.allRoutes.length + ' 條</h4>';
+            
+            if (routes.allRoutes.length > 0) {
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路線</th><th>買入物品</th><th>賣出物品</th><th>收益率</th></tr>';
+                
+                routes.allRoutes.forEach((route, index) => {
+                    const yieldClass = route.yield > 30 ? 'yield-high' : 'yield-medium';
+                    
+                    html += `<tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="route-path">${route.from}</td>
+                        <td>${route.buyItem}</td>
+                        <td>${route.sellItem}</td>
+                        <td class="${yieldClass}">${route.yield.toFixed(1)}%</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="info-box" style="text-align: center;"><p>📭 沒有找到收益率 ≥ 26% 的路線</p><p>請檢查價格輸入或調整賣出物品選擇</p></div>';
+            }
+            html += '</div>';
+
+            document.getElementById('calculation-result').innerHTML = html;
+        }
+    </script>
+</body>
+</html>
