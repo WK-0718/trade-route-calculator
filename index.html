@@ -491,11 +491,8 @@
         const MAX_SEGMENTS = 7;
         const MIN_SEGMENT_YIELD = 26;
 
-        // DOM 加載完成後初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing app...');
-            initializeApp();
-        });
+        // 立即初始化應用
+        initializeApp();
 
         // 初始化應用
         function initializeApp() {
@@ -595,6 +592,8 @@
             
             if (!tbody) {
                 console.error('Trade data table body not found!');
+                // 如果tbody不存在，重新嘗試
+                setTimeout(renderTradeDataTable, 100);
                 return;
             }
             
