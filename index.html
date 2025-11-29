@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>大貿易節路線計算機</title>
+    <title>大貿易節路線計算機 - 異世界奇妙生活</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             box-sizing: border-box;
@@ -50,6 +55,11 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             margin-bottom: 25px;
             overflow: hidden;
+            transition: transform 0.2s;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
         }
         
         .card-header {
@@ -57,14 +67,15 @@
             color: white;
             padding: 18px;
             font-weight: bold;
-            font-size: 1.1em;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 1.1em;
         }
         
         .card-body {
             padding: 25px;
+            overflow-x: auto;
         }
         
         .btn {
@@ -76,7 +87,7 @@
             cursor: pointer;
             font-size: 14px;
             transition: all 0.3s;
-            margin: 5px;
+            margin: 3px;
             font-weight: bold;
         }
         
@@ -86,20 +97,20 @@
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         
-        .btn-success {
-            background-color: #27ae60;
-        }
-        
-        .btn-success:hover {
-            background-color: #219653;
-        }
-        
         .btn-danger {
             background-color: #e74c3c;
         }
         
         .btn-danger:hover {
             background-color: #c0392b;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
         }
         
         .btn-warning {
@@ -118,26 +129,46 @@
             background-color: #2980b9;
         }
         
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .form-control {
+        table {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
+            border-collapse: collapse;
+            min-width: 900px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            padding: 14px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
             font-size: 14px;
         }
         
-        .form-control:focus {
+        th {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 2px solid #4a86e8;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        tr:hover {
+            background-color: #e3f2fd;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            transition: border-color 0.3s;
+        }
+        
+        select:focus, input:focus {
             outline: none;
             border-color: #4a86e8;
             box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
@@ -153,6 +184,69 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
+        .yield-high {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .yield-medium {
+            color: #f39c12;
+            font-weight: bold;
+        }
+        
+        .route-path {
+            font-weight: bold;
+            color: #2c3e50;
+            font-size: 1.05em;
+        }
+        
+        .route-details {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .segment-count {
+            background: linear-gradient(135deg, #4a86e8, #3a76d8);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 8px;
+            font-weight: bold;
+        }
+        
+        .route-section {
+            margin-bottom: 30px;
+        }
+        
+        .route-section h4 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .calculation-status {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #ffd43b;
+            font-weight: bold;
+        }
+        
+        .low-yield {
+            color: #e74c3c;
+            font-weight: bold;
+            background-color: #ffeaea;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
         .success-message {
             background: linear-gradient(135deg, #d4edda, #c3e6cb);
             color: #155724;
@@ -170,15 +264,7 @@
             margin: 10px 0;
             border: 1px solid #f5c6cb;
         }
-        
-        .admin-panel {
-            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-            border: 2px solid #e17055;
-        }
-        
+
         .room-indicator {
             background: linear-gradient(135deg, #9b59b6, #8e44ad);
             color: white;
@@ -255,6 +341,31 @@
             color: #7f8c8d;
         }
 
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4a86e8;
+            box-shadow: 0 0 0 3px rgba(74, 134, 232, 0.1);
+        }
+
         .room-list {
             max-height: 300px;
             overflow-y: auto;
@@ -290,79 +401,14 @@
             color: #7f8c8d;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 900px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        .admin-panel {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border: 2px solid #e17055;
         }
-        
-        th, td {
-            padding: 14px;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-            font-size: 14px;
-        }
-        
-        th {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-weight: bold;
-            color: #2c3e50;
-            border-bottom: 2px solid #4a86e8;
-        }
-        
-        tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        
-        tr:hover {
-            background-color: #e3f2fd;
-        }
-        
-        .nav-tabs {
-            display: flex;
-            border-bottom: 2px solid #4a86e8;
-            margin-bottom: 20px;
-        }
-        
-        .nav-tab {
-            padding: 12px 20px;
-            background: #f8f9fa;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-            color: #6c757d;
-            transition: all 0.3s;
-        }
-        
-        .nav-tab.active {
-            background: #4a86e8;
-            color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .admin-badge {
-            background: #e74c3c;
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            margin-left: 8px;
-        }
-        
-        .user-role {
-            font-size: 12px;
-            color: #7f8c8d;
-            margin-top: 3px;
-        }
-        
+
         /* 載入動畫 */
         .loading {
             display: inline-block;
@@ -379,7 +425,30 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        
+
+        /* 介面切換按鈕 */
+        .view-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: #4a86e8;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            transition: all 0.3s;
+        }
+
+        .view-toggle:hover {
+            transform: scale(1.1);
+            background: #3a76d8;
+        }
+
         /* 手機響應式調整 */
         @media (max-width: 768px) {
             body {
@@ -405,7 +474,7 @@
                 margin: 2px;
             }
             
-            .form-control {
+            select, input {
                 padding: 8px;
                 font-size: 13px;
             }
@@ -433,14 +502,32 @@
                 width: 100%;
                 justify-content: center;
             }
-            
-            .nav-tabs {
+
+            /* 電腦模式下的手機樣式 */
+            body.desktop-view {
+                overflow: auto;
+                transform-origin: top left;
+            }
+
+            body.desktop-view .container {
+                min-width: 1200px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card-header {
                 flex-direction: column;
+                gap: 10px;
+                text-align: center;
             }
             
-            .nav-tab {
+            .btn {
                 width: 100%;
-                text-align: center;
+                margin: 5px 0;
+            }
+
+            .modal-content {
+                padding: 20px;
             }
         }
     </style>
@@ -465,31 +552,12 @@
             <div class="room-actions">
                 <button class="btn btn-warning" onclick="leaveRoom()">離開房間</button>
                 <button class="btn btn-danger" id="close-room-btn" onclick="closeRoom()" style="display: none;">關閉房間</button>
-                <button class="btn btn-info" id="admin-panel-btn" onclick="showAdminPanel()" style="display: none;">管理房間</button>
+                <!-- 已移除管理房間按鈕 -->
             </div>
         </div>
 
-        <!-- 管理面板 -->
-        <div class="admin-panel" id="admin-panel" style="display: none;">
-            <h4>🔧 房間管理 <span class="admin-badge">管理員專用</span></h4>
-            <div>
-                <button class="btn btn-info" onclick="listAllRooms()">列出所有房間</button>
-                <button class="btn btn-warning" onclick="cleanupOldRooms()">清理舊房間 (24小時以上)</button>
-                <button class="btn btn-danger" onclick="deleteAllRooms()">刪除所有房間</button>
-                <button class="btn" onclick="showUserManagement()">用戶管理</button>
-            </div>
-            <div id="admin-log" style="margin-top: 10px; font-size: 12px; max-height: 200px; overflow-y: auto;"></div>
-        </div>
-
-        <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('main-app')">主應用程式</button>
-            <button class="nav-tab" onclick="switchTab('user-management')">用戶管理</button>
-            <button class="nav-tab" onclick="switchTab('system-info')">系統資訊</button>
-        </div>
-
-        <!-- 主應用程式頁籤 -->
-        <div id="main-app" class="tab-content active">
-            <div class="info-box">
+        <!-- 管理面板 - 已移除 -->
+        <div class="info-box">
                 <strong>📖 使用說明：</strong> 
             <ol>
                 <li>創建房間後，其他用戶可以通過房間代碼加入。</li>
@@ -498,152 +566,58 @@
                 <li>輸入買入和賣出價格%，選擇賣出物品，點擊"開始計算7段路線"。</li>
                 <li>只有房間創建者可以關閉房間。</li>
             </ol>
-                <div style="margin-top: 10px;">
-                    <button class="btn" onclick="showCreateRoomModal()">🏠 創建房間</button>
-                    <button class="btn" onclick="showJoinRoomModal()">🚪 加入房間</button>
-                    <button class="btn" onclick="useLocalMode()">💾 本地模式</button>
+            <div style="margin-top: 10px;">
+                <button class="btn" onclick="showCreateRoomModal()">🏠 創建房間</button>
+                <button class="btn" onclick="showJoinRoomModal()">🚪 加入房間</button>
+                <button class="btn" onclick="useLocalMode()">💾 本地模式</button>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <span>📊 貿易數據輸入表</span>
+                <div>
+                    <button class="btn btn-success" onclick="saveAllData()">💾 儲存所有數據</button>
+                    <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清除所有數據</button>
                 </div>
             </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <span>📊 貿易數據輸入表</span>
-                    <div>
-                        <button class="btn btn-success" onclick="saveAllData()">💾 儲存所有數據</button>
-                        <button class="btn btn-danger" onclick="clearAllData()">🗑️ 清除所有數據</button>
-                    </div>
+            <div class="card-body">
+                <div class="info-box" style="margin-bottom: 20px;">
+                    <strong>💡 提示：</strong> 請在遊戲中記錄各貿易地點的實際價格後輸入下方表格
+                    <span id="data-source-indicator" style="float: right; font-weight: bold;">💾 本地模式</span>
                 </div>
-                <div class="card-body">
-                    <div class="info-box" style="margin-bottom: 20px;">
-                        <strong>💡 提示：</strong> 請在遊戲中記錄各貿易地點的實際價格後輸入下方表格
-                        <span id="data-source-indicator" style="float: right; font-weight: bold;">💾 本地模式</span>
-                    </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>📍 地點名稱</th>
-                                <th>🛒 買入物品</th>
-                                <th>💰 買入價格%</th>
-                                <th>📦 賣出物品</th>
-                                <th>💵 賣出價格%</th>
-                                <th>⚡ 操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="trade-data-body">
-                            <!-- 數據由JavaScript生成 -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <span>🎯 路線計算結果</span>
-                    <button class="btn btn-success" onclick="calculateRoutes()">
-                        <span id="calculate-text">🚀 開始計算7段路線</span>
-                        <span id="calculate-loading" class="loading" style="display: none;"></span>
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="calculation-status" id="calculation-status">
-                        📝 請先在上方表格輸入價格數據，然後點擊計算按鈕
-                    </div>
-                    <div id="calculation-result">
-                        <!-- 計算結果將顯示在這裡 -->
-                    </div>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>📍 地點名稱</th>
+                            <th>🛒 買入物品</th>
+                            <th>💰 買入價格%</th>
+                            <th>📦 賣出物品</th>
+                            <th>💵 賣出價格%</th>
+                            <th>⚡ 操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trade-data-body">
+                        <!-- 數據由JavaScript生成 -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <!-- 用戶管理頁籤 -->
-        <div id="user-management" class="tab-content">
-            <div class="info-box">
-                <strong>👥 用戶管理：</strong> 管理系統用戶和權限設定。
+        <div class="card">
+            <div class="card-header">
+                <span>🎯 路線計算結果</span>
+                <button class="btn btn-success" onclick="calculateRoutes()">
+                    <span id="calculate-text">🚀 開始計算7段路線</span>
+                    <span id="calculate-loading" class="loading" style="display: none;"></span>
+                </button>
             </div>
-            
-            <div class="card">
-                <div class="card-header">用戶列表</div>
-                <div class="card-body">
-                    <div class="admin-panel">
-                        <h4>用戶管理工具</h4>
-                        <div>
-                            <button class="btn btn-info" onclick="loadAllUsers()">刷新用戶列表</button>
-                            <button class="btn btn-success" onclick="showAddUserModal()">新增用戶</button>
-                            <button class="btn btn-warning" onclick="exportUserData()">導出用戶數據</button>
-                        </div>
-                    </div>
-                    
-                    <div id="user-list" style="margin-top: 15px;">
-                        <p>點擊「刷新用戶列表」以載入用戶數據</p>
-                    </div>
+            <div class="card-body">
+                <div class="calculation-status" id="calculation-status">
+                    📝 請先在上方表格輸入價格數據，然後點擊計算按鈕
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">權限管理</div>
-                <div class="card-body">
-                    <div class="info-box">
-                        <strong>權限說明：</strong>
-                        <ul style="margin: 10px 0; padding-left: 20px;">
-                            <li><strong>普通用戶</strong>：可以使用所有基本功能，創建和加入房間</li>
-                            <li><strong>管理員</strong>：擁有所有權限，包括房間管理和用戶管理</li>
-                            <li><strong>系統管理員</strong>：最高權限，可以管理所有用戶和系統設定</li>
-                        </ul>
-                    </div>
-                    
-                    <div id="permission-management">
-                        <p>選擇用戶以管理權限</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 系統資訊頁籤 -->
-        <div id="system-info" class="tab-content">
-            <div class="info-box">
-                <strong>🔧 系統資訊：</strong> 查看系統狀態和技術資訊。
-            </div>
-            
-            <div class="card">
-                <div class="card-header">系統狀態</div>
-                <div class="card-body">
-                    <div id="system-status">
-                        <p><strong>Firebase 連線狀態：</strong> <span id="firebase-status">未連接</span></p>
-                        <p><strong>當前用戶：</strong> <span id="current-user-info">未登入</span></p>
-                        <p><strong>用戶權限：</strong> <span id="user-role-info">未設定</span></p>
-                        <p><strong>房間狀態：</strong> <span id="room-status-info">未加入房間</span></p>
-                        <p><strong>數據儲存：</strong> <span id="storage-status">本地儲存</span></p>
-                    </div>
-                    
-                    <div style="margin-top: 20px;">
-                        <button class="btn btn-info" onclick="checkSystemStatus()">檢查系統狀態</button>
-                        <button class="btn btn-warning" onclick="clearAllCache()">清除快取</button>
-                        <button class="btn btn-danger" onclick="resetSystem()">重設系統</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">技術資訊</div>
-                <div class="card-body">
-                    <h4>系統規格</h4>
-                    <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li><strong>版本：</strong> v2.1.0</li>
-                        <li><strong>更新日期：</strong> 2023年11月</li>
-                        <li><strong>技術架構：</strong> HTML5, CSS3, JavaScript, Firebase</li>
-                        <li><strong>數據庫：</strong> Firebase Firestore</li>
-                        <li><strong>本地儲存：</strong> localStorage</li>
-                    </ul>
-                    
-                    <h4>功能模組</h4>
-                    <ul style="margin: 10px 0; padding-left: 20px;">
-                        <li>✅ 貿易路線計算引擎</li>
-                        <li>✅ 實時房間系統</li>
-                        <li>✅ 用戶權限管理</li>
-                        <li>✅ 響應式界面設計</li>
-                        <li>✅ 數據導入/導出</li>
-                        <li>✅ 自動清理機制</li>
-                    </ul>
+                <div id="calculation-result">
+                    <!-- 計算結果將顯示在這裡 -->
                 </div>
             </div>
         </div>
@@ -693,36 +667,12 @@
             </div>
         </div>
 
-        <!-- 新增用戶模態框 -->
-        <div class="modal" id="add-user-modal">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <div class="modal-title">👤 新增用戶</div>
-                    <button class="close-modal" onclick="hideAddUserModal()">&times;</button>
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="new-user-name">用戶名稱</label>
-                    <input type="text" class="form-control" id="new-user-name" placeholder="輸入用戶名稱">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="new-user-email">電子郵件</label>
-                    <input type="email" class="form-control" id="new-user-email" placeholder="輸入電子郵件">
-                </div>
-                <div class="form-group">
-                    <label class="form-label" for="new-user-role">用戶權限</label>
-                    <select class="form-control" id="new-user-role">
-                        <option value="user">普通用戶</option>
-                        <option value="admin">管理員</option>
-                        <option value="superadmin">系統管理員</option>
-                    </select>
-                </div>
-                <button class="btn btn-success" style="width: 100%;" onclick="addNewUser()">新增用戶</button>
-            </div>
-        </div>
-    </div>
+    <!-- 介面切換按鈕 -->
+    <button class="view-toggle" id="view-toggle" title="切換電腦/手機介面">💻</button>
 
     <script>
         // === Firebase 配置 ===
+        // 🔧 請在這裡貼上您從 Firebase 獲取的配置
         const firebaseConfig = {
             apiKey: "AIzaSyDvubpcu7EuSjwaJ3Cl4ny8-2J_7xtg3-g",
             authDomain: "trade-route-calculator-1d777.firebaseapp.com",
@@ -746,12 +696,37 @@
         const tradeData = [
             ["龍城", "櫻花", 88, "冰龍鱗", 115],
             ["火龍迷宮", "冬樹嫩芽", 88, "回音海螺", 111],
-            // ... 其他貿易數據
+            ["飛龍山", "風滾草", 85, "河童之玉", 110],
+            ["魔物之森", "地獄蝠翼膜", 86, "回音海螺", 110],
+            ["精靈之森", "回音海螺", 87, "地獄火種", 114],
+            ["綠洲城", "風滾草", 89, "鬼盞", 114],
+            ["舊都遺址", "古代石板", 88, "風滾草", 113],
+            ["大沙漠", "砂鱷魚之果", 86, "斯芬克斯的鬃毛", 115],
+            ["砂城聖域", "斯芬克斯的鬃毛", 85, "砂鱷魚之果", 111],
+            ["冰海大陸", "冬樹嫩芽", 86, "王者之角", 112],
+            ["永冬冰原", "嘰嘰鳥的雙面羽", 87, "王者之角", 112],
+            ["龍穴", "冰龍鱗", 88, "魔礦石塊", 114],
+            ["北嶺雪山", "王者之角", 86, "地獄火種", 114],
+            ["黑暗森林", "地獄蝠翼膜", 90, "回音海螺", 112],
+            ["墓園", "靈魂之燈", 85, "嘰嘰鳥的雙面羽", 112],
+            ["地下城", "魔礦石塊", 87, "風滾草", 111],
+            ["地底火山", "地獄火種", 87, "靈魂之燈", 111],
+            ["櫻島", "櫻花", 88, "風風鈴", 112],
+            ["八百萬島", "風風鈴", 89, "河童之玉", 114],
+            ["漩渦島", "河童之玉", 88, "鬼盞", 112],
+            ["鬼島", "鬼盞", 85, "地獄蝠翼膜", 114],
+            ["珊瑚區", "回音海螺", 88, "船蟹的螯", 115],
+            ["沉船區", "船蟹的螯", 85, "回音海螺", 112],
+            ["風暴區", "巨鯨琥珀", 85, "船蟹的螯", 113],
+            ["靜謐海", "海怪觸手", 89, "風風鈴", 113]
         ];
 
         const ITEMS = [
             "櫻花", "地獄蝠翼膜", "冬樹嫩芽", "魔礦石塊", "風滾草", 
-            // ... 其他物品
+            "風風鈴", "回音海螺", "斯芬克斯的鬃毛", "古代石板", 
+            "砂鱷魚之果", "靈魂之燈", "嘰嘰鳥的雙面羽", "冰龍鱗", 
+            "王者之角", "鬼盞", "船蟹的螯", "地獄火種", "河童之玉", 
+            "巨鯨琥珀", "海怪觸手"
         ];
 
         const MAX_SEGMENTS = 7;
@@ -763,13 +738,14 @@
         let isInRoom = false;
         let isLocalMode = true;
         let roomUnsubscribe = null;
-        let currentUserRole = 'user'; // 預設為普通用戶
+        let isDesktopView = false;
 
         // === 初始化應用 ===
         document.addEventListener('DOMContentLoaded', function() {
             console.log("🚀 初始化大貿易節路線計算機...");
             initializeApp();
-            updateSystemInfo();
+            setupViewToggle();
+            checkAndCleanupOldRooms();
         });
 
         function initializeApp() {
@@ -779,65 +755,165 @@
             
             // 檢查是否有保存的房間信息
             checkRoomStatus();
-            
-            // 檢查用戶權限
-            checkUserRole();
         }
 
-        // === 權限檢查 ===
-        function checkUserRole() {
-            const savedRole = localStorage.getItem('userRole');
-            if (savedRole) {
-                currentUserRole = savedRole;
-                updateUIForUserRole();
-            }
-        }
-
-        function updateUIForUserRole() {
-            const adminPanelBtn = document.getElementById('admin-panel-btn');
-            const adminPanel = document.getElementById('admin-panel');
+        // === 介面切換功能 ===
+        function setupViewToggle() {
+            const toggleBtn = document.getElementById('view-toggle');
+            toggleBtn.addEventListener('click', toggleView);
             
-            // 只有管理員和系統管理員可以看到管理面板
-            if (currentUserRole === 'admin' || currentUserRole === 'superadmin') {
-                adminPanelBtn.style.display = 'block';
-                if (adminPanel.style.display === 'block') {
-                    adminPanel.style.display = 'block';
-                }
+            // 檢查是否為手機設備
+            if (isMobileDevice()) {
+                toggleBtn.style.display = 'block';
             } else {
-                adminPanelBtn.style.display = 'none';
-                adminPanel.style.display = 'none';
+                toggleBtn.style.display = 'none';
             }
-            
-            // 更新系統資訊
-            updateSystemInfo();
         }
 
-        // === 頁籤切換 ===
-        function switchTab(tabId) {
-            // 隱藏所有頁籤內容
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
+        function isMobileDevice() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   window.innerWidth <= 768;
+        }
+
+        function toggleView() {
+            const body = document.body;
+            const toggleBtn = document.getElementById('view-toggle');
             
-            // 移除所有頁籤的主動狀態
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            // 顯示選定的頁籤內容
-            document.getElementById(tabId).classList.add('active');
-            
-            // 設定選定頁籤為主動狀態
-            event.target.classList.add('active');
-            
-            // 如果是用戶管理頁籤且用戶沒有權限，顯示警告
-            if (tabId === 'user-management' && currentUserRole !== 'superadmin') {
-                document.getElementById('user-list').innerHTML = 
-                    '<div class="error-message">❌ 只有系統管理員可以訪問用戶管理功能</div>';
+            if (isDesktopView) {
+                // 切換到手機模式
+                body.classList.remove('desktop-view');
+                body.style.transform = 'scale(1)';
+                body.style.width = 'auto';
+                toggleBtn.textContent = '💻';
+                toggleBtn.title = '切換到電腦介面';
+                isDesktopView = false;
+            } else {
+                // 切換到電腦模式
+                body.classList.add('desktop-view');
+                body.style.transform = 'scale(0.7)';
+                body.style.width = '142%'; // 1/0.7 = 1.428
+                toggleBtn.textContent = '📱';
+                toggleBtn.title = '切換到手機介面';
+                isDesktopView = true;
             }
+        }
+
+        // === 數據管理 ===
+        function loadData() {
+            try {
+                const saved = localStorage.getItem('tradeData');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    parsed.forEach((row, index) => {
+                        if (tradeData[index]) {
+                            tradeData[index][2] = row[2];
+                            tradeData[index][3] = row[3];
+                            tradeData[index][4] = row[4];
+                        }
+                    });
+                    console.log("✅ 數據加載成功");
+                }
+            } catch (error) {
+                console.error("❌ 加載數據時出錯:", error);
+            }
+        }
+
+        function renderTradeDataTable() {
+            const tbody = document.getElementById('trade-data-body');
+            tbody.innerHTML = '';
+            
+            tradeData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                
+                // 地點名稱
+                tr.appendChild(createCell(row[0]));
+                
+                // 買入物品
+                tr.appendChild(createCell(row[1]));
+                
+                // 買入價格%
+                const buyPriceCell = document.createElement('td');
+                const buyPriceInput = document.createElement('input');
+                buyPriceInput.type = 'number';
+                buyPriceInput.min = '0';
+                buyPriceInput.max = '200';
+                buyPriceInput.value = row[2];
+                buyPriceInput.dataset.index = index;
+                buyPriceInput.placeholder = '輸入價格%';
+                buyPriceCell.appendChild(buyPriceInput);
+                tr.appendChild(buyPriceCell);
+                
+                // 賣出物品
+                const sellItemCell = document.createElement('td');
+                const sellItemSelect = document.createElement('select');
+                sellItemSelect.dataset.index = index;
+                
+                ITEMS.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item;
+                    option.textContent = item;
+                    if (item === row[3]) {
+                        option.selected = true;
+                    }
+                    sellItemSelect.appendChild(option);
+                });
+                
+                sellItemCell.appendChild(sellItemSelect);
+                tr.appendChild(sellItemCell);
+                
+                // 賣出價格%
+                const sellPriceCell = document.createElement('td');
+                const sellPriceInput = document.createElement('input');
+                sellPriceInput.type = 'number';
+                sellPriceInput.min = '0';
+                sellPriceInput.max = '200';
+                sellPriceInput.value = row[4];
+                sellPriceInput.dataset.index = index;
+                sellPriceInput.placeholder = '輸入價格%';
+                sellPriceCell.appendChild(sellPriceInput);
+                tr.appendChild(sellPriceCell);
+                
+                // 操作按鈕
+                const actionCell = document.createElement('td');
+                const saveButton = document.createElement('button');
+                saveButton.className = 'btn';
+                saveButton.textContent = '💾 儲存';
+                saveButton.onclick = () => saveSingleRow(index);
+                actionCell.appendChild(saveButton);
+                tr.appendChild(actionCell);
+                
+                tbody.appendChild(tr);
+            });
+        }
+
+        function createCell(text) {
+            const cell = document.createElement('td');
+            cell.textContent = text;
+            return cell;
         }
 
         // === 房間功能 ===
+        function checkRoomStatus() {
+            const savedRoom = localStorage.getItem('currentRoom');
+            const savedUser = localStorage.getItem('currentUser');
+            
+            if (savedRoom && savedUser) {
+                try {
+                    currentRoom = JSON.parse(savedRoom);
+                    currentUser = JSON.parse(savedUser);
+                    isInRoom = true;
+                    isLocalMode = false;
+                    
+                    showRoomIndicator();
+                    loadRoomData();
+                    showMessage(`✅ 已重新加入房間: ${currentRoom.name}`, 'success');
+                } catch (e) {
+                    console.error("解析房間信息失敗:", e);
+                    clearRoomData();
+                }
+            }
+        }
+
         function showRoomIndicator() {
             const indicator = document.getElementById('room-indicator');
             const roomName = document.getElementById('current-room-name');
@@ -860,215 +936,493 @@
             }
         }
 
-        // === 管理功能 ===
-        function showAdminPanel() {
-            // 檢查權限
-            if (currentUserRole !== 'admin' && currentUserRole !== 'superadmin') {
-                showMessage('❌ 只有管理員可以使用此功能', 'error');
-                return;
-            }
+        function updateRoomUsersList() {
+            const usersList = document.getElementById('room-users-list');
+            if (!usersList || !currentRoom) return;
             
-            const panel = document.getElementById('admin-panel');
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            usersList.innerHTML = '';
+            
+            if (currentRoom.users && currentRoom.users.length > 0) {
+                currentRoom.users.forEach(user => {
+                    const userBadge = document.createElement('span');
+                    userBadge.className = 'user-badge';
+                    userBadge.textContent = user.name;
+                    if (user.id === currentUser.id) {
+                        userBadge.style.background = 'rgba(255, 255, 255, 0.3)';
+                        userBadge.textContent += ' (我)';
+                    }
+                    usersList.appendChild(userBadge);
+                });
+            }
         }
 
-        async function listAllRooms() {
-            // 檢查權限
-            if (currentUserRole !== 'admin' && currentUserRole !== 'superadmin') {
-                showAdminLog('❌ 權限不足：只有管理員可以查看所有房間');
+        // 創建房間 - 修復版
+        async function createRoom() {
+            const roomName = document.getElementById('room-name').value.trim();
+            const userName = document.getElementById('user-name').value.trim();
+            
+            if (!roomName || !userName) {
+                showMessage('❌ 請填寫房間名稱和您的暱稱', 'error');
                 return;
             }
             
-            if (!db) {
-                showAdminLog('❌ 請先設定Firebase連線');
-                return;
-            }
+            const roomId = generateRoomId();
+            const userId = generateUserId();
             
-            showAdminLog('<div class="loading"></div> 載入房間列表中...');
+            // 修復：將貿易數據轉換為 Firestore 支持的格式
+            const tradeDataForFirestore = {
+                version: "1.0",
+                lastUpdate: new Date().toISOString(),
+                // 將嵌套數組拆分為多個數組
+                locations: tradeData.map(row => row[0]),
+                buyItems: tradeData.map(row => row[1]),
+                buyPrices: tradeData.map(row => row[2]),
+                sellItems: tradeData.map(row => row[3]),
+                sellPrices: tradeData.map(row => row[4])
+            };
+
+            const roomData = {
+                id: roomId,
+                name: roomName,
+                creator: userName,
+                users: [{ id: userId, name: userName }],
+                tradeData: tradeDataForFirestore, // 使用修復後的數據結構
+                createdAt: new Date().toISOString(),
+                lastActive: new Date().toISOString()
+            };
             
             try {
-                const snapshot = await db.collection('rooms').get();
-                const adminLog = document.getElementById('admin-log');
+                await db.collection('rooms').doc(roomId).set(roomData);
                 
-                if (snapshot.empty) {
-                    adminLog.innerHTML = '📭 沒有找到任何房間';
+                currentRoom = roomData;
+                currentUser = {
+                    id: userId,
+                    name: userName,
+                    isCreator: true
+                };
+                
+                isInRoom = true;
+                isLocalMode = false;
+                
+                saveRoomData();
+                showRoomIndicator();
+                hideCreateRoomModal();
+                updateDataSourceIndicator();
+                listenToRoomChanges(roomId);
+                
+                showMessage(`✅ 房間 "${roomName}" 創建成功！房間代碼: ${roomId}`, 'success');
+                
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(roomId);
+                    showMessage('📋 房間代碼已複製到剪貼板', 'success');
+                }
+                
+            } catch (error) {
+                console.error("創建房間失敗:", error);
+                showMessage('❌ 創建房間失敗: ' + error.message, 'error');
+            }
+        }
+
+        // 加入房間 - 修復版
+        async function joinRoom() {
+            const userName = document.getElementById('join-user-name').value.trim();
+            const roomCode = document.getElementById('room-code').value.trim().toUpperCase();
+            
+            if (!userName || !roomCode) {
+                showMessage('❌ 請填寫您的暱稱和房間代碼', 'error');
+                return;
+            }
+            
+            try {
+                const roomDoc = await db.collection('rooms').doc(roomCode).get();
+                
+                if (!roomDoc.exists) {
+                    showMessage('❌ 找不到該房間，請檢查房間代碼是否正確', 'error');
                     return;
                 }
                 
-                let html = `找到 ${snapshot.size} 個房間:<br><br>`;
-                let totalUsers = 0;
-                let activeRooms = 0;
-                const now = new Date();
+                const roomData = roomDoc.data();
+                const userId = generateUserId();
                 
-                snapshot.forEach(doc => {
-                    const room = doc.data();
-                    const userCount = room.users ? room.users.length : 0;
-                    totalUsers += userCount;
-                    
-                    const lastActive = new Date(room.lastActive);
-                    const hoursAgo = (now - lastActive) / (1000 * 60 * 60);
-                    const isActive = hoursAgo < 24;
-                    
-                    if (isActive) activeRooms++;
-                    
-                    html += `<div class="room-item">
-                        <div class="room-info">
-                            <div class="room-name">${room.name} (ID: ${room.id})</div>
-                            <div class="room-meta">
-                                用戶: ${userCount}人 | 創建者: ${room.creator} | 
-                                最後活動: ${getTimeAgo(room.lastActive)} |
-                                ${isActive ? '🟢 活躍' : '🔴 非活躍'}
-                            </div>
-                        </div>
-                        <button class="btn btn-danger" onclick="deleteRoom('${room.id}')">刪除</button>
-                    </div>`;
+                const updatedUsers = roomData.users ? [...roomData.users] : [];
+                const existingUserIndex = updatedUsers.findIndex(u => u.name === userName);
+                
+                if (existingUserIndex !== -1) {
+                    updatedUsers[existingUserIndex].id = userId;
+                } else {
+                    updatedUsers.push({ id: userId, name: userName });
+                }
+                
+                await db.collection('rooms').doc(roomCode).update({
+                    users: updatedUsers,
+                    lastActive: new Date().toISOString()
                 });
                 
-                adminLog.innerHTML = html;
+                currentRoom = {
+                    ...roomData,
+                    users: updatedUsers
+                };
+                
+                currentUser = {
+                    id: userId,
+                    name: userName,
+                    isCreator: roomData.creator === userName
+                };
+                
+                isInRoom = true;
+                isLocalMode = false;
+                
+                saveRoomData();
+                showRoomIndicator();
+                hideJoinRoomModal();
+                updateDataSourceIndicator();
+                loadRoomData();
+                listenToRoomChanges(roomCode);
+                
+                showMessage(`✅ 成功加入房間 "${roomData.name}"！`, 'success');
                 
             } catch (error) {
-                console.error("列出房間失敗:", error);
-                showAdminLog('❌ 載入房間列表失敗: ' + error.message);
+                console.error("加入房間失敗:", error);
+                showMessage('❌ 加入房間失敗: ' + error.message, 'error');
             }
         }
 
-        // === 用戶管理功能 ===
-        function showUserManagement() {
-            // 只有系統管理員可以訪問用戶管理
-            if (currentUserRole !== 'superadmin') {
-                showAdminLog('❌ 權限不足：只有系統管理員可以訪問用戶管理');
-                return;
+        // 監聽房間變化
+        function listenToRoomChanges(roomId) {
+            if (roomUnsubscribe) {
+                roomUnsubscribe();
             }
             
-            // 切換到用戶管理頁籤
-            switchTab('user-management');
-            loadAllUsers();
-        }
-
-        function showAddUserModal() {
-            // 只有系統管理員可以新增用戶
-            if (currentUserRole !== 'superadmin') {
-                showMessage('❌ 只有系統管理員可以新增用戶', 'error');
-                return;
-            }
-            
-            document.getElementById('add-user-modal').style.display = 'flex';
-        }
-
-        function hideAddUserModal() {
-            document.getElementById('add-user-modal').style.display = 'none';
-        }
-
-        function loadAllUsers() {
-            // 只有系統管理員可以載入用戶列表
-            if (currentUserRole !== 'superadmin') {
-                document.getElementById('user-list').innerHTML = 
-                    '<div class="error-message">❌ 只有系統管理員可以訪問用戶管理功能</div>';
-                return;
-            }
-            
-            // 模擬載入用戶數據
-            const userList = document.getElementById('user-list');
-            userList.innerHTML = '<div class="loading"></div> 載入用戶列表中...';
-            
-            setTimeout(() => {
-                // 模擬用戶數據
-                const users = [
-                    { id: 1, name: '張小明', email: 'zhang@example.com', role: 'user', joinDate: '2023-10-01' },
-                    { id: 2, name: '李美華', email: 'li@example.com', role: 'admin', joinDate: '2023-09-15' },
-                    { id: 3, name: '王大同', email: 'wang@example.com', role: 'user', joinDate: '2023-11-05' },
-                    { id: 4, name: '系統管理員', email: 'admin@example.com', role: 'superadmin', joinDate: '2023-08-20' }
-                ];
-                
-                let html = '<table style="width: 100%;">';
-                html += '<tr><th>ID</th><th>名稱</th><th>電子郵件</th><th>權限</th><th>加入日期</th><th>操作</th></tr>';
-                
-                users.forEach(user => {
-                    let roleBadge = '';
-                    if (user.role === 'admin') roleBadge = '<span class="admin-badge">管理員</span>';
-                    if (user.role === 'superadmin') roleBadge = '<span class="admin-badge" style="background: #9b59b6;">系統管理員</span>';
+            roomUnsubscribe = db.collection('rooms').doc(roomId).onSnapshot((doc) => {
+                if (doc.exists) {
+                    const roomData = doc.data();
                     
-                    html += `<tr>
-                        <td>${user.id}</td>
-                        <td>${user.name}</td>
-                        <td>${user.email}</td>
-                        <td>${roleBadge}</td>
-                        <td>${user.joinDate}</td>
-                        <td>
-                            <button class="btn btn-info" onclick="editUser(${user.id})">編輯</button>
-                            <button class="btn btn-danger" onclick="deleteUser(${user.id})">刪除</button>
-                        </td>
-                    </tr>`;
-                });
-                
-                html += '</table>';
-                userList.innerHTML = html;
-            }, 1000);
+                    if (currentRoom && JSON.stringify(currentRoom.users) !== JSON.stringify(roomData.users)) {
+                        currentRoom.users = roomData.users;
+                        updateRoomUsersList();
+                    }
+                    
+                    if (roomData.tradeData && shouldUpdateTradeData(roomData.tradeData)) {
+                        updateLocalTradeData(roomData.tradeData);
+                        renderTradeDataTable();
+                        showMessage('🔄 房間數據已更新', 'success');
+                    }
+                    
+                    currentRoom.lastActive = roomData.lastActive;
+                }
+            });
         }
 
-        function addNewUser() {
-            const name = document.getElementById('new-user-name').value.trim();
-            const email = document.getElementById('new-user-email').value.trim();
-            const role = document.getElementById('new-user-role').value;
+        function shouldUpdateTradeData(newTradeData) {
+            if (!currentRoom || !currentRoom.tradeData) return true;
+            return JSON.stringify(newTradeData) !== JSON.stringify(currentRoom.tradeData);
+        }
+
+        function updateLocalTradeData(tradeDataFromFirestore) {
+            // 從 Firestore 格式轉換回本地格式
+            const data = tradeDataFromFirestore;
+            for (let i = 0; i < tradeData.length; i++) {
+                if (data.locations && data.locations[i] === tradeData[i][0]) {
+                    tradeData[i][2] = data.buyPrices[i] || 0;
+                    tradeData[i][3] = data.sellItems[i] || tradeData[i][3];
+                    tradeData[i][4] = data.sellPrices[i] || 0;
+                }
+            }
+            currentRoom.tradeData = tradeDataFromFirestore;
+        }
+
+        // 離開房間
+        async function leaveRoom() {
+            if (!currentRoom || !currentUser) return;
             
-            if (!name || !email) {
-                showMessage('❌ 請填寫所有必要欄位', 'error');
+            if (confirm('確定要離開房間嗎？')) {
+                try {
+                    const updatedUsers = currentRoom.users.filter(user => user.id !== currentUser.id);
+                    
+                    if (updatedUsers.length > 0) {
+                        await db.collection('rooms').doc(currentRoom.id).update({
+                            users: updatedUsers,
+                            lastActive: new Date().toISOString()
+                        });
+                    } else {
+                        await db.collection('rooms').doc(currentRoom.id).delete();
+                    }
+                    
+                } catch (error) {
+                    console.error("離開房間失敗:", error);
+                } finally {
+                    clearRoomData();
+                    showMessage('✅ 已離開房間', 'success');
+                }
+            }
+        }
+
+        // 關閉房間 - 只有創建者可以使用
+        async function closeRoom() {
+            if (!currentRoom || !currentUser) return;
+            
+            // 檢查是否為房間創建者
+            if (!currentUser.isCreator) {
+                showMessage('❌ 只有房間創建者可以關閉房間', 'error');
                 return;
             }
             
-            // 模擬新增用戶
-            showMessage(`✅ 用戶 ${name} 已成功新增`, 'success');
-            hideAddUserModal();
-            
-            // 清空表單
-            document.getElementById('new-user-name').value = '';
-            document.getElementById('new-user-email').value = '';
-            
-            // 刷新用戶列表
-            loadAllUsers();
-        }
-
-        // === 系統資訊功能 ===
-        function updateSystemInfo() {
-            document.getElementById('firebase-status').textContent = db ? '已連接' : '未連接';
-            document.getElementById('current-user-info').textContent = currentUser ? currentUser.name : '未登入';
-            document.getElementById('user-role-info').textContent = getRoleDisplayName(currentUserRole);
-            document.getElementById('room-status-info').textContent = isInRoom ? `已加入房間: ${currentRoom.name}` : '未加入房間';
-            document.getElementById('storage-status').textContent = isLocalMode ? '本地儲存' : '雲端同步';
-        }
-
-        function getRoleDisplayName(role) {
-            switch(role) {
-                case 'user': return '普通用戶';
-                case 'admin': return '管理員';
-                case 'superadmin': return '系統管理員';
-                default: return '未設定';
+            if (confirm('確定要關閉房間嗎？所有用戶將被踢出。')) {
+                try {
+                    await db.collection('rooms').doc(currentRoom.id).delete();
+                } catch (error) {
+                    console.error("關閉房間失敗:", error);
+                } finally {
+                    clearRoomData();
+                    showMessage('✅ 房間已關閉', 'success');
+                }
             }
         }
 
-        function checkSystemStatus() {
-            showMessage('🔍 系統狀態檢查完成，所有功能正常', 'success');
-            updateSystemInfo();
-        }
-
-        function clearAllCache() {
-            if (confirm('確定要清除所有快取嗎？這將刪除所有本地數據。')) {
-                localStorage.clear();
-                showMessage('✅ 所有快取已清除', 'success');
-                location.reload();
+        // 使用本地模式
+        function useLocalMode() {
+            if (isInRoom) {
+                if (confirm('切換到本地模式將離開當前房間。確定要切換嗎？')) {
+                    clearRoomData();
+                    showMessage('✅ 已切換到本地模式', 'success');
+                }
+            } else {
+                isLocalMode = true;
+                updateDataSourceIndicator();
+                showMessage('✅ 已使用本地模式', 'success');
             }
         }
 
-        function resetSystem() {
-            if (confirm('⚠️ 確定要重設系統嗎？這將刪除所有數據並恢復到初始狀態。')) {
-                localStorage.clear();
-                sessionStorage.clear();
-                showMessage('✅ 系統已重設', 'success');
-                location.reload();
+        // 加載房間數據
+        function loadRoomData() {
+            if (currentRoom && currentRoom.tradeData) {
+                updateLocalTradeData(currentRoom.tradeData);
+                renderTradeDataTable();
             }
         }
 
         // === 工具函數 ===
+        function generateRoomId() {
+            return Math.random().toString(36).substring(2, 8).toUpperCase();
+        }
+
+        function generateUserId() {
+            return Math.random().toString(36).substring(2, 10);
+        }
+
+        function saveRoomData() {
+            if (currentRoom && currentUser) {
+                localStorage.setItem('currentRoom', JSON.stringify(currentRoom));
+                localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            }
+        }
+
+        function clearRoomData() {
+            currentRoom = null;
+            currentUser = null;
+            isInRoom = false;
+            isLocalMode = true;
+            
+            if (roomUnsubscribe) {
+                roomUnsubscribe();
+                roomUnsubscribe = null;
+            }
+            
+            localStorage.removeItem('currentRoom');
+            localStorage.removeItem('currentUser');
+            
+            document.getElementById('room-indicator').style.display = 'none';
+            updateDataSourceIndicator();
+            
+            loadData();
+            renderTradeDataTable();
+        }
+
+        function updateDataSourceIndicator() {
+            const indicator = document.getElementById('data-source-indicator');
+            if (isLocalMode) {
+                indicator.textContent = '💾 本地模式';
+                indicator.style.color = '#27ae60';
+            } else if (isInRoom) {
+                indicator.textContent = `🏠 房間: ${currentRoom.name}`;
+                indicator.style.color = '#9b59b6';
+            }
+        }
+
+        // === 模態框控制 ===
+        function showCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'flex';
+        }
+
+        function hideCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'none';
+        }
+
+        function showJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'flex';
+            loadAvailableRooms();
+        }
+
+        function hideJoinRoomModal() {
+            document.getElementById('join-room-modal').style.display = 'none';
+        }
+
+        async function loadAvailableRooms() {
+            if (!db) return;
+            
+            try {
+                const snapshot = await db.collection('rooms').get();
+                const availableRooms = document.getElementById('available-rooms');
+                availableRooms.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    availableRooms.innerHTML = '<div class="room-item" style="justify-content: center;">暫無可用房間</div>';
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const room = doc.data();
+                    const roomItem = document.createElement('div');
+                    roomItem.className = 'room-item';
+                    
+                    const roomInfo = document.createElement('div');
+                    roomInfo.className = 'room-info';
+                    
+                    const roomName = document.createElement('div');
+                    roomName.className = 'room-name';
+                    roomName.textContent = room.name;
+                    
+                    const roomMeta = document.createElement('div');
+                    roomMeta.className = 'room-meta';
+                    roomMeta.textContent = `ID: ${room.id} | 用戶: ${room.users ? room.users.length : 0}人 | 創建者: ${room.creator}`;
+                    
+                    roomInfo.appendChild(roomName);
+                    roomInfo.appendChild(roomMeta);
+                    
+                    const joinButton = document.createElement('button');
+                    joinButton.className = 'btn';
+                    joinButton.textContent = '加入';
+                    joinButton.onclick = () => {
+                        document.getElementById('room-code').value = room.id;
+                    };
+                    
+                    roomItem.appendChild(roomInfo);
+                    roomItem.appendChild(joinButton);
+                    
+                    availableRooms.appendChild(roomItem);
+                });
+                
+            } catch (error) {
+                console.error("加載房間列表失敗:", error);
+            }
+        }
+
+        // === 數據保存 ===
+        function saveSingleRow(index) {
+            try {
+                const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
+                const select = document.querySelector(`select[data-index="${index}"]`);
+                
+                if (inputs[0]) tradeData[index][2] = parseInt(inputs[0].value) || 0;
+                if (select) tradeData[index][3] = select.value;
+                if (inputs[1]) tradeData[index][4] = parseInt(inputs[1].value) || 0;
+                
+                saveToLocalStorage();
+                
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                showMessage(`✅ 第 ${index + 1} 行數據已儲存！`, 'success');
+            } catch (error) {
+                console.error("❌ 保存單行數據時出錯:", error);
+                showMessage('❌ 保存失敗，請檢查數據格式', 'error');
+            }
+        }
+
+        function saveAllData() {
+            try {
+                let hasData = false;
+                tradeData.forEach((row, index) => {
+                    const inputs = document.querySelectorAll(`input[data-index="${index}"]`);
+                    const select = document.querySelector(`select[data-index="${index}"]`);
+                    
+                    if (inputs[0]) {
+                        row[2] = parseInt(inputs[0].value) || 0;
+                        if (row[2] > 0) hasData = true;
+                    }
+                    if (select) row[3] = select.value;
+                    if (inputs[1]) {
+                        row[4] = parseInt(inputs[1].value) || 0;
+                        if (row[4] > 0) hasData = true;
+                    }
+                });
+                
+                saveToLocalStorage();
+                
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                if (hasData) {
+                    showMessage('✅ 所有數據已儲存！現在可以計算路線了。', 'success');
+                } else {
+                    showMessage('⚠️ 數據已儲存，但檢測到所有價格都為0，請輸入實際價格。', 'error');
+                }
+            } catch (error) {
+                console.error("❌ 保存所有數據時出錯:", error);
+                showMessage('❌ 保存失敗，請檢查控制台錯誤信息', 'error');
+            }
+        }
+
+        async function updateRoomData() {
+            if (!currentRoom || !db) return;
+            
+            try {
+                const tradeDataForFirestore = {
+                    version: "1.0",
+                    lastUpdate: new Date().toISOString(),
+                    locations: tradeData.map(row => row[0]),
+                    buyItems: tradeData.map(row => row[1]),
+                    buyPrices: tradeData.map(row => row[2]),
+                    sellItems: tradeData.map(row => row[3]),
+                    sellPrices: tradeData.map(row => row[4])
+                };
+
+                await db.collection('rooms').doc(currentRoom.id).update({
+                    tradeData: tradeDataForFirestore,
+                    lastActive: new Date().toISOString()
+                });
+            } catch (error) {
+                console.error("更新房間數據失敗:", error);
+            }
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ 確定要清除所有數據嗎？所有價格將重置為0')) {
+                tradeData.forEach(row => {
+                    row[2] = 0;
+                    row[4] = 0;
+                });
+                renderTradeDataTable();
+                saveToLocalStorage();
+                
+                if (isInRoom && currentRoom) {
+                    updateRoomData();
+                }
+                
+                showMessage('🗑️ 所有數據已清除！', 'success');
+            }
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('tradeData', JSON.stringify(tradeData));
+            } catch (error) {
+                console.error("❌ 保存到本地儲存時出錯:", error);
+            }
+        }
+
         function showMessage(message, type) {
             const statusDiv = document.getElementById('calculation-status');
             if (statusDiv) {
@@ -1078,118 +1432,231 @@
             }
         }
 
-        function showAdminLog(message) {
-            const adminLog = document.getElementById('admin-log');
-            if (adminLog) {
-                adminLog.innerHTML = message;
-            }
-        }
-
-        function getTimeAgo(timestamp) {
-            const now = new Date();
-            const time = new Date(timestamp);
-            const diffMs = now - time;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMs / 3600000);
-            const diffDays = Math.floor(diffMs / 86400000);
-            
-            if (diffMins < 60) return `${diffMins}分鐘前`;
-            if (diffHours < 24) return `${diffHours}小時前`;
-            return `${diffDays}天前`;
-        }
-
-        // 其他函數（loadData, renderTradeDataTable, createRoom, joinRoom等）
-        // 由於篇幅限制，這裡只顯示了關鍵功能，完整實現需要包含所有貿易計算功能
-        
-        // 模擬函數
-        function loadData() {
-            console.log("載入數據...");
-        }
-        
-        function renderTradeDataTable() {
-            console.log("渲染貿易數據表格...");
-        }
-        
-        function createRoom() {
-            console.log("創建房間...");
-            hideCreateRoomModal();
-        }
-        
-        function joinRoom() {
-            console.log("加入房間...");
-            hideJoinRoomModal();
-        }
-        
-        function hideCreateRoomModal() {
-            document.getElementById('create-room-modal').style.display = 'none';
-        }
-        
-        function hideJoinRoomModal() {
-            document.getElementById('join-room-modal').style.display = 'none';
-        }
-        
-        function showCreateRoomModal() {
-            document.getElementById('create-room-modal').style.display = 'flex';
-        }
-        
-        function showJoinRoomModal() {
-            document.getElementById('join-room-modal').style.display = 'flex';
-        }
-        
-        function leaveRoom() {
-            console.log("離開房間...");
-        }
-        
-        function closeRoom() {
-            console.log("關閉房間...");
-        }
-        
-        function useLocalMode() {
-            console.log("使用本地模式...");
-        }
-        
-        function saveAllData() {
-            console.log("儲存所有數據...");
-        }
-        
-        function clearAllData() {
-            console.log("清除所有數據...");
-        }
-        
+        // === 完整的路線計算功能 ===
         function calculateRoutes() {
-            console.log("計算路線...");
+            const statusDiv = document.getElementById('calculation-status');
+            const resultDiv = document.getElementById('calculation-result');
+            const calculateText = document.getElementById('calculate-text');
+            const calculateLoading = document.getElementById('calculate-loading');
+            
+            calculateText.textContent = '計算中...';
+            calculateLoading.style.display = 'inline-block';
+            
+            statusDiv.innerHTML = '⏳ 計算中... 正在分析貿易數據，請稍候';
+            resultDiv.innerHTML = '';
+            
+            setTimeout(() => {
+                try {
+                    const routes = calculateAllRoutes();
+                    displayResults(routes);
+                    statusDiv.innerHTML = `✅ 計算完成！找到 ${routes.allRoutes.length} 條推薦路線，${routes.cycleRoutes.length} 條循環路線`;
+                } catch (error) {
+                    console.error("❌ 計算路線時出錯:", error);
+                    statusDiv.innerHTML = '❌ 計算錯誤：' + error.message;
+                    resultDiv.innerHTML = '<div class="error-message">計算過程中發生錯誤，請檢查數據輸入是否正確</div>';
+                } finally {
+                    calculateText.textContent = '🚀 開始計算7段路線';
+                    calculateLoading.style.display = 'none';
+                }
+            }, 100);
         }
-        
-        function updateRoomUsersList() {
-            console.log("更新房間用戶列表...");
+
+        function calculateAllRoutes() {
+            console.log("🔄 開始計算貿易路線...");
+            
+            // 1. 計算所有單段貿易的收益率
+            const singleRoutes = [];
+            tradeData.forEach(route => {
+                const [location, buyItem, buyPrice, sellItem, sellPrice] = route;
+                if (buyPrice > 0 && sellPrice > 0) {
+                    const yield = ((sellPrice - buyPrice) / buyPrice) * 100;
+                    singleRoutes.push({
+                        from: location,
+                        buyItem: buyItem,
+                        sellItem: sellItem,
+                        yield: yield,
+                        buyPrice: buyPrice,
+                        sellPrice: sellPrice
+                    });
+                }
+            });
+
+            console.log(`📊 找到 ${singleRoutes.length} 個有效貿易段`);
+
+            // 2. 計算所有可能的路線組合
+            const allRoutes = [];
+            
+            // 2.1 單段路線
+            singleRoutes.forEach(route => {
+                if (route.yield >= MIN_SEGMENT_YIELD) {
+                    allRoutes.push({
+                        path: [route.from],
+                        segments: [route],
+                        avgYield: route.yield,
+                        segmentCount: 1,
+                        segmentYields: [route.yield],
+                        segmentDetails: [`${route.yield.toFixed(1)}%`],
+                        isCycle: false,
+                        startItem: route.buyItem,
+                        endItem: route.sellItem
+                    });
+                }
+            });
+
+            // 2.2 多段路線（2-7段）
+            for (let segments = 2; segments <= MAX_SEGMENTS; segments++) {
+                console.log(`🔍 計算 ${segments} 段路線...`);
+                
+                // 從現有路線擴展
+                const newRoutes = [];
+                allRoutes.forEach(route => {
+                    if (route.segmentCount === segments - 1) {
+                        const lastSegment = route.segments[route.segments.length - 1];
+                        
+                        // 尋找可以連接的下一段
+                        singleRoutes.forEach(nextRoute => {
+                            if (lastSegment.sellItem === nextRoute.buyItem && 
+                                !route.path.includes(nextRoute.from)) {
+                                
+                                const newPath = [...route.path, nextRoute.from];
+                                const newSegments = [...route.segments, nextRoute];
+                                const totalYield = newSegments.reduce((sum, seg) => sum + seg.yield, 0);
+                                const avgYield = totalYield / segments;
+                                
+                                const isCycle = segments >= 2 && nextRoute.sellItem === route.segments[0].buyItem;
+                                
+                                newRoutes.push({
+                                    path: newPath,
+                                    segments: newSegments,
+                                    avgYield: avgYield,
+                                    segmentCount: segments,
+                                    segmentYields: newSegments.map(seg => seg.yield),
+                                    segmentDetails: newSegments.map(seg => `${seg.yield.toFixed(1)}%`),
+                                    isCycle: isCycle,
+                                    startItem: route.segments[0].buyItem,
+                                    endItem: nextRoute.sellItem
+                                });
+                            }
+                        });
+                    }
+                });
+                
+                // 添加到所有路線
+                allRoutes.push(...newRoutes);
+            }
+
+            console.log(`📍 生成 ${allRoutes.length} 條路線`);
+
+            // 3. 過濾和排序
+            const validRoutes = allRoutes.filter(route => 
+                route.segments.every(segment => segment.yield >= MIN_SEGMENT_YIELD)
+            );
+
+            const sortedRoutes = validRoutes.sort((a, b) => b.avgYield - a.avgYield);
+
+            // 4. 分類路線
+            const cycleRoutes = sortedRoutes.filter(route => route.isCycle);
+            const oneWayRoutes = sortedRoutes.filter(route => !route.isCycle);
+
+            console.log(`🎯 最終結果: ${sortedRoutes.length} 總路線, ${cycleRoutes.length} 循環路線, ${oneWayRoutes.length} 單程路線`);
+
+            return {
+                allRoutes: sortedRoutes.slice(0, 50), // 限制顯示數量
+                cycleRoutes: cycleRoutes.slice(0, 20),
+                oneWayRoutes: oneWayRoutes.slice(0, 30)
+            };
         }
-        
-        function checkRoomStatus() {
-            console.log("檢查房間狀態...");
-        }
-        
-        function cleanupOldRooms() {
-            console.log("清理舊房間...");
-        }
-        
-        function deleteAllRooms() {
-            console.log("刪除所有房間...");
-        }
-        
-        function deleteRoom(roomId) {
-            console.log("刪除房間:", roomId);
-        }
-        
-        function editUser(userId) {
-            console.log("編輯用戶:", userId);
-        }
-        
-        function deleteUser(userId) {
-            console.log("刪除用戶:", userId);
-        }
-        
-        function exportUserData() {
-            console.log("導出用戶數據...");
+
+        function displayResults(routes) {
+            let html = '';
+
+            // 1. 所有分段 ≥ 26% 推薦路線
+            html += '<div class="route-section">';
+            html += '<h4>⭐ 推薦路線 (所有分段 ≥ 26%) - 共 ' + routes.allRoutes.length + ' 條</h4>';
+            if (routes.allRoutes.length > 0) {
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th><th>類型</th></tr>';
+                
+                routes.allRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
+                    const segmentDetails = route.segmentDetails.join(' → ');
+                    const routeType = route.isCycle ? '🔁 循環' : '➡️ 單程';
+                    
+                    html += `<tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="route-path">${route.path.join(' → ')} <span class="segment-count">${route.segmentCount}段</span></td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
+                        <td class="route-details">${segmentDetails}</td>
+                        <td>${routeType}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="info-box" style="text-align: center;"><p>📭 沒有找到所有分段收益率均 ≥ 26% 的路線</p><p>請檢查價格輸入或調整賣出物品選擇</p></div>';
+            }
+            html += '</div>';
+
+            // 2. 循環路線
+            html += '<div class="route-section">';
+            html += '<h4>🔁 循環路線 - 共 ' + routes.cycleRoutes.length + ' 條</h4>';
+            if (routes.cycleRoutes.length > 0) {
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th></tr>';
+                
+                routes.cycleRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
+                    const segmentDetails = route.segmentDetails.join(' → ');
+                    
+                    html += `<tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="route-path">${route.path.join(' → ')} 🔁 <span class="segment-count">${route.segmentCount}段</span></td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
+                        <td class="route-details">${segmentDetails}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="info-box" style="text-align: center;"><p>📭 沒有找到循環路線</p></div>';
+            }
+            html += '</div>';
+
+            // 3. 單程路線
+            html += '<div class="route-section">';
+            html += '<h4>➡️ 單程路線 - 共 ' + routes.oneWayRoutes.length + ' 條</h4>';
+            if (routes.oneWayRoutes.length > 0) {
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th></tr>';
+                
+                routes.oneWayRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
+                    const segmentDetails = route.segmentDetails.join(' → ');
+                    
+                    html += `<tr>
+                        <td><strong>${index + 1}</strong></td>
+                        <td class="route-path">${route.path.join(' → ')} <span class="segment-count">${route.segmentCount}段</span></td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
+                        <td class="route-details">${segmentDetails}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            } else {
+                html += '<div class="info-box" style="text-align: center;"><p>📭 沒有找到單程路線</p></div>';
+            }
+            html += '</div>';
+
+            // 計算說明
+            html += '<div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 10px; border-left: 5px solid #4a86e8;">';
+            html += '<strong>📋 計算說明：</strong><br><br>';
+            html += '• <strong>平均收益</strong> = (所有分段收益率總和) ÷ 分段數量<br>';
+            html += '• <strong>分段收益計算</strong> = (賣出價格 - 買入價格) ÷ 買入價格 × 100<br>';
+            html += '• <strong>路線連接規則</strong>：必須是相同物品才能連接路線<br>';
+            html += '• <strong>推薦路線</strong>：嚴格過濾，所有分段收益率均 ≥ 26%<br>';
+            html += '• <strong>循環路線</strong>：起點和終點物品相同，可以循環交易<br>';
+            html += '• <strong>單程路線</strong>：起點和終點物品不同，單次交易路線<br>';
+            html += '• 基於您輸入的實際價格數據計算';
+            html += '</div>';
+
+            document.getElementById('calculation-result').innerHTML = html;
         }
     </script>
 </body>
