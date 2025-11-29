@@ -261,6 +261,14 @@
         .toast.show {
             opacity: 1;
         }
+        
+        .github-info {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            padding: 15px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
@@ -274,6 +282,16 @@
             ✅ 當前使用本地數據模式。所有數據自動保存在您的瀏覽器中。
         </div>
         
+        <div class="github-info">
+            <strong>使用說明：</strong>
+            <ol>
+                <li>在「數據輸入」頁面輸入各城市的買入和賣出價格</li>
+                <li>點擊「儲存」按鈕保存數據</li>
+                <li>切換到其他標籤頁查看計算結果</li>
+                <li>數據會自動保存在您的瀏覽器中，下次訪問時會自動載入</li>
+            </ol>
+        </div>
+        
         <div class="calculation-info">
             <strong>計算說明：</strong> 本計算機支持最高7段貿易路線的計算，包括循環路線和單程路線。計算基於您輸入的買入/賣出價格，並自動尋找最優路徑。
         </div>
@@ -284,7 +302,6 @@
             <div class="tab" data-tab="total-yield">總收益率排名</div>
             <div class="tab" data-tab="cycle-routes">循環路線</div>
             <div class="tab" data-tab="non-cycle-routes">單程路線</div>
-            <div class="tab" data-tab="item-yield">各物品收益率</div>
         </div>
         
         <!-- 數據輸入 -->
@@ -383,21 +400,6 @@
             </div>
         </div>
         
-        <!-- 各物品收益率 -->
-        <div class="tab-content" id="item-yield">
-            <div class="card">
-                <div class="card-header">
-                    <span>📦 各物品收益率</span>
-                    <button class="btn btn-small" id="refresh-item-yield">刷新</button>
-                </div>
-                <div class="card-body">
-                    <div id="item-yield-content">
-                        <!-- 數據將由JavaScript動態生成 -->
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <div class="refresh-info" id="refresh-time">
             最後更新時間: 尚未更新
         </div>
@@ -489,23 +491,36 @@
 
         // DOM 加載完成後初始化
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing app...');
             initializeApp();
             setupEventListeners();
         });
 
         // 初始化應用
         function initializeApp() {
+            console.log('Initializing app...');
             loadTradeData();
             updateRefreshTime();
             showToast('大貿易節路線計算機已載入！支持最高7段路線計算。');
+            
+            // 確保數據輸入表格已渲染
+            setTimeout(() => {
+                if (document.getElementById('trade-data-body').children.length === 0) {
+                    console.log('Trade data table is empty, re-rendering...');
+                    renderTradeDataTable();
+                }
+            }, 100);
         }
 
         // 設置事件監聽器
         function setupEventListeners() {
+            console.log('Setting up event listeners...');
+            
             // 標籤頁切換
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', function() {
                     const tabId = this.getAttribute('data-tab');
+                    console.log('Switching to tab:', tabId);
                     switchTab(tabId);
                 });
             });
@@ -519,11 +534,14 @@
             document.getElementById('refresh-total-yield').addEventListener('click', () => refreshCalculations('total-yield'));
             document.getElementById('refresh-cycle-routes').addEventListener('click', () => refreshCalculations('cycle-routes'));
             document.getElementById('refresh-non-cycle-routes').addEventListener('click', () => refreshCalculations('non-cycle-routes'));
-            document.getElementById('refresh-item-yield').addEventListener('click', () => refreshCalculations('item-yield'));
+            
+            console.log('Event listeners setup complete');
         }
 
         // 切換標籤頁
         function switchTab(tabId) {
+            console.log('Switching tab to:', tabId);
+            
             // 隱藏所有標籤內容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.remove('active');
@@ -535,10 +553,18 @@
             });
             
             // 顯示選中的標籤內容
-            document.getElementById(tabId).classList.add('active');
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) {
+                targetTab.classList.add('active');
+            } else {
+                console.error('Tab not found:', tabId);
+            }
             
             // 設置選中的標籤為活動狀態
-            document.querySelector(`.tab[data-tab="${tabId}"]`).classList.add('active');
+            const targetTabButton = document.querySelector(`.tab[data-tab="${tabId}"]`);
+            if (targetTabButton) {
+                targetTabButton.classList.add('active');
+            }
             
             // 如果切換到計算結果標籤，自動刷新數據
             if (tabId !== 'input') {
@@ -548,17 +574,21 @@
 
         // 加載貿易數據
         function loadTradeData() {
+            console.log('Loading trade data...');
             const savedData = localStorage.getItem('tradeData');
             
             if (savedData) {
                 try {
                     tradeData = JSON.parse(savedData);
+                    console.log('Loaded saved data:', tradeData.length, 'items');
                     showToast('已加載本地保存的數據');
                 } catch (error) {
+                    console.error('Error parsing saved data:', error);
                     tradeData = JSON.parse(JSON.stringify(DEFAULT_TRADE_DATA));
                     showToast('本地數據損壞，使用默認數據');
                 }
             } else {
+                console.log('No saved data found, using default data');
                 tradeData = JSON.parse(JSON.stringify(DEFAULT_TRADE_DATA));
                 showToast('使用默認數據');
             }
@@ -568,6 +598,8 @@
 
         // 保存所有數據
         function saveAllData() {
+            console.log('Saving all data...');
+            
             // 收集所有數據
             tradeData.forEach((row, index) => {
                 const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
@@ -580,6 +612,7 @@
             });
             
             localStorage.setItem('tradeData', JSON.stringify(tradeData));
+            console.log('Data saved to localStorage');
             showToast('數據已儲存到本地');
             updateRefreshTime();
         }
@@ -587,6 +620,8 @@
         // 清除所有數據
         function clearAllData() {
             if (confirm('確定要清除所有數據嗎？所有價格將重置為0')) {
+                console.log('Clearing all data...');
+                
                 // 將所有價格設為0，但保留地點和物品
                 tradeData = tradeData.map(row => {
                     return [
@@ -607,7 +642,14 @@
 
         // 渲染貿易數據表格
         function renderTradeDataTable() {
+            console.log('Rendering trade data table...');
             const tbody = document.getElementById('trade-data-body');
+            
+            if (!tbody) {
+                console.error('Trade data table body not found!');
+                return;
+            }
+            
             tbody.innerHTML = '';
             
             tradeData.forEach((row, index) => {
@@ -678,23 +720,32 @@
                 
                 tbody.appendChild(tr);
             });
+            
+            console.log('Trade data table rendered with', tradeData.length, 'rows');
         }
 
         // 保存單行數據
         function saveSingleRow(index) {
+            console.log('Saving single row:', index);
             const row = tradeData[index];
             
             // 更新買入價格
             const buyPriceInput = document.querySelector(`input[data-index="${index}"][data-type="buy"]`);
-            row[2] = parseInt(buyPriceInput.value) || 0;
+            if (buyPriceInput) {
+                row[2] = parseInt(buyPriceInput.value) || 0;
+            }
             
             // 更新賣出物品
             const sellItemSelect = document.querySelector(`select[data-index="${index}"][data-type="sell-item"]`);
-            row[3] = sellItemSelect.value;
+            if (sellItemSelect) {
+                row[3] = sellItemSelect.value;
+            }
             
             // 更新賣出價格
             const sellPriceInput = document.querySelector(`input[data-index="${index}"][data-type="sell"]`);
-            row[4] = parseInt(sellPriceInput.value) || 0;
+            if (sellPriceInput) {
+                row[4] = parseInt(sellPriceInput.value) || 0;
+            }
             
             localStorage.setItem('tradeData', JSON.stringify(tradeData));
             showToast('數據已儲存');
@@ -703,6 +754,8 @@
 
         // 計算所有可能的貿易路線（最高7段）
         function calculateAllRoutes() {
+            console.log('Calculating all routes...');
+            
             // 計算單一貿易路線的收益率
             const singleRoutes = [];
             
@@ -720,6 +773,8 @@
                     });
                 }
             });
+            
+            console.log('Single routes calculated:', singleRoutes.length);
             
             // 計算多段貿易路線（最高7段）
             const multiSegmentRoutes = [];
@@ -764,6 +819,8 @@
                 findRoutes([startRoute.from], [startRoute], startRoute.yield, MAX_SEGMENTS);
             });
             
+            console.log('Multi-segment routes calculated:', multiSegmentRoutes.length);
+            
             // 計算循環路線（起點和終點相同）
             const cycleRoutes = [];
             
@@ -782,31 +839,18 @@
                 }
             });
             
-            // 計算各物品的收益率
-            const itemYields = {};
-            
-            singleRoutes.forEach(route => {
-                const item = route.buyItem;
-                if (!itemYields[item]) {
-                    itemYields[item] = [];
-                }
-                itemYields[item].push({
-                    from: route.from,
-                    to: route.sellItem,
-                    yield: route.yield
-                });
-            });
+            console.log('Cycle routes calculated:', cycleRoutes.length);
             
             return {
                 singleRoutes,
                 multiSegmentRoutes,
-                cycleRoutes,
-                itemYields
+                cycleRoutes
             };
         }
 
         // 刷新計算結果
         function refreshCalculations(tabId) {
+            console.log('Refreshing calculations for tab:', tabId);
             const routes = calculateAllRoutes();
             
             switch(tabId) {
@@ -822,9 +866,6 @@
                 case 'non-cycle-routes':
                     refreshNonCycleRoutes(routes);
                     break;
-                case 'item-yield':
-                    refreshItemYield(routes);
-                    break;
             }
             updateRefreshTime();
         }
@@ -832,6 +873,11 @@
         // 刷新平均收益率排名
         function refreshAvgYield(routes) {
             const content = document.getElementById('avg-yield-content');
+            
+            if (!content) {
+                console.error('avg-yield-content element not found!');
+                return;
+            }
             
             // 過濾路線：只保留所有分段收益率都 ≥ 26% 的路線
             const filteredRoutes = routes.multiSegmentRoutes.filter(route => {
@@ -888,11 +934,17 @@
             }
             
             content.innerHTML = html;
+            console.log('Average yield content updated');
         }
 
         // 刷新總收益率排名
         function refreshTotalYield(routes) {
             const content = document.getElementById('total-yield-content');
+            
+            if (!content) {
+                console.error('total-yield-content element not found!');
+                return;
+            }
             
             // 過濾路線：只保留所有分段收益率都 ≥ 26% 的路線
             const filteredRoutes = routes.multiSegmentRoutes.filter(route => {
@@ -949,11 +1001,17 @@
             }
             
             content.innerHTML = html;
+            console.log('Total yield content updated');
         }
 
         // 刷新循環路線
         function refreshCycleRoutes(routes) {
             const content = document.getElementById('cycle-routes-content');
+            
+            if (!content) {
+                console.error('cycle-routes-content element not found!');
+                return;
+            }
             
             // 按總收益率排序循環路線
             const sortedCycleRoutes = [...routes.cycleRoutes].sort((a, b) => b.totalYield - a.totalYield);
@@ -1007,11 +1065,17 @@
             }
             
             content.innerHTML = html;
+            console.log('Cycle routes content updated');
         }
 
         // 刷新單程路線
         function refreshNonCycleRoutes(routes) {
             const content = document.getElementById('non-cycle-routes-content');
+            
+            if (!content) {
+                console.error('non-cycle-routes-content element not found!');
+                return;
+            }
             
             // 過濾非循環路線並按總收益率排序
             const nonCycleRoutes = routes.multiSegmentRoutes.filter(route => !route.isCycle);
@@ -1066,73 +1130,7 @@
             }
             
             content.innerHTML = html;
-        }
-
-        // 刷新物品收益率
-        function refreshItemYield(routes) {
-            const content = document.getElementById('item-yield-content');
-            
-            // 收集所有物品的最高收益率
-            const topItemYields = [];
-            
-            Object.keys(routes.itemYields).forEach(item => {
-                const yields = routes.itemYields[item];
-                if (yields.length > 0) {
-                    // 找到最高收益率的交易
-                    const topYield = yields.reduce((max, current) => 
-                        current.yield > max.yield ? current : max
-                    );
-                    
-                    topItemYields.push({
-                        item: item,
-                        from: topYield.from,
-                        to: topYield.to,
-                        yield: topYield.yield
-                    });
-                }
-            });
-            
-            // 按收益率排序
-            topItemYields.sort((a, b) => b.yield - a.yield);
-            
-            let html = '';
-            
-            if (topItemYields.length === 0) {
-                html = '<p>沒有可用的物品收益率數據，請檢查數據輸入。</p>';
-            } else {
-                html = `
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>物品</th>
-                                <th>買入地</th>
-                                <th>賣出地</th>
-                                <th>收益率</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                `;
-                
-                topItemYields.forEach(itemYield => {
-                    const yieldClass = itemYield.yield > 25 ? 'yield-high' : 
-                                     itemYield.yield > 15 ? 'yield-medium' : 'yield-low';
-                    const yieldIcon = itemYield.yield > 25 ? '🔥' : 
-                                    itemYield.yield > 15 ? '🎯' : '📈';
-                    
-                    html += `
-                        <tr>
-                            <td>${itemYield.item}</td>
-                            <td>${itemYield.from}</td>
-                            <td>${itemYield.to}</td>
-                            <td class="${yieldClass}">${yieldIcon}${itemYield.yield.toFixed(1)}%</td>
-                        </tr>
-                    `;
-                });
-                
-                html += '</tbody></table>';
-            }
-            
-            content.innerHTML = html;
+            console.log('Non-cycle routes content updated');
         }
 
         // 更新刷新時間
@@ -1143,18 +1141,30 @@
             const seconds = now.getSeconds().toString().padStart(2, '0');
             lastRefreshTime = `${hours}:${minutes}:${seconds}`;
             
-            document.getElementById('refresh-time').textContent = `最後更新時間: ${lastRefreshTime}`;
+            const refreshTimeElement = document.getElementById('refresh-time');
+            if (refreshTimeElement) {
+                refreshTimeElement.textContent = `最後更新時間: ${lastRefreshTime}`;
+            }
         }
 
         // 顯示提示訊息
         function showToast(message) {
             const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3000);
+            if (toast) {
+                toast.textContent = message;
+                toast.classList.add('show');
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // 確保頁面加載完成後初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
         }
     </script>
 </body>
