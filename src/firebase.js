@@ -3,12 +3,12 @@ import { getFirestore } from 'firebase/firestore';
 
 // 🔧 在這裡貼上您從 Firebase 複製的配置
 const firebaseConfig = {
-  apiKey: "您的-apiKey",
-  authDomain: "您的項目.firebaseapp.com",
-  projectId: "您的-projectId",
-  storageBucket: "您的項目.appspot.com",
-  messagingSenderId: "您的-messagingSenderId",
-  appId: "您的-appId"
+  apiKey: "AIzaSyDvubpcu7EuSjwaJ3Cl4ny8-2J_7xtg3-g",
+  authDomain: "trade-route-calculator-1d777.firebaseapp.com",
+  projectId: "trade-route-calculator-1d777",
+  storageBucket: "trade-route-calculator-1d777.firebasestorage.app",
+  messagingSenderId: "364965676370",
+  appId: "1:364965676370:web:8678a24620a916455d268b"
 };
 
 // 初始化 Firebase
