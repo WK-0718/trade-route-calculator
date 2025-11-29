@@ -106,12 +106,6 @@
             appearance: menulist;
         }
         
-        /* 確保選中的文字可見 */
-        select option:checked {
-            background: #4a86e8;
-            color: white;
-        }
-        
         .info-box {
             background-color: #e8f4fd;
             padding: 12px;
@@ -149,6 +143,32 @@
             margin-left: 5px;
         }
         
+        .cycle-indicator {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .route-type {
+            background-color: #4a86e8;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+        
+        .route-section {
+            margin-bottom: 20px;
+        }
+        
+        .route-section h4 {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
         /* 手機響應式調整 */
         @media (max-width: 768px) {
             body {
@@ -457,62 +477,149 @@
                     }
                 });
 
-                // 模擬計算結果（包含分段收益）
-                const bestRoutes = [
+                // 模擬計算結果 - 分為三個部分
+                const allRoutes = [
                     { 
                         path: "龍城 → 精靈之森 → 珊瑚區", 
-                        totalYield: 45.2, 
+                        avgYield: 22.6, // (30.7 + 14.5) / 2
                         segments: 3,
-                        segmentYields: [30.7, 14.5]
+                        segmentYields: [30.7, 14.5],
+                        isCycle: false
                     },
                     { 
                         path: "魔物之森 → 鬼島 → 黑暗森林", 
-                        totalYield: 42.8, 
+                        avgYield: 21.4, // (32.6 + 10.2) / 2
                         segments: 3,
-                        segmentYields: [32.6, 10.2]
+                        segmentYields: [32.6, 10.2],
+                        isCycle: false
                     },
                     { 
                         path: "飛龍山 → 綠洲城 → 舊都遺址", 
-                        totalYield: 38.5, 
+                        avgYield: 19.3, // (29.4 + 9.1) / 2
                         segments: 3,
-                        segmentYields: [29.4, 9.1]
-                    },
-                    { 
-                        path: "龍城 → 龍穴 → 精靈之森 → 珊瑚區", 
-                        totalYield: 68.5, 
-                        segments: 4,
-                        segmentYields: [30.7, 14.5, 23.3]
-                    },
-                    { 
-                        path: "魔物之森 → 鬼島 → 珊瑚區 → 魔物之森", 
-                        totalYield: 52.3, 
-                        segments: 4,
-                        segmentYields: [32.6, 10.2, 9.5]
+                        segmentYields: [29.4, 9.1],
+                        isCycle: false
                     }
                 ];
 
-                let html = '<h3>推薦路線 (所有分段 ≥ 26%)</h3>';
+                const cycleRoutes = [
+                    { 
+                        path: "龍城 → 龍穴 → 精靈之森 → 龍城", 
+                        avgYield: 17.4, // (30.7 + 14.5 + 7.1) / 3
+                        segments: 4,
+                        segmentYields: [30.7, 14.5, 7.1],
+                        isCycle: true
+                    },
+                    { 
+                        path: "魔物之森 → 鬼島 → 珊瑚區 → 魔物之森", 
+                        avgYield: 16.3, // (32.6 + 10.2 + 6.0) / 3
+                        segments: 4,
+                        segmentYields: [32.6, 10.2, 6.0],
+                        isCycle: true
+                    },
+                    { 
+                        path: "飛龍山 → 綠洲城 → 舊都遺址 → 飛龍山", 
+                        avgYield: 14.8, // (29.4 + 9.1 + 6.0) / 3
+                        segments: 4,
+                        segmentYields: [29.4, 9.1, 6.0],
+                        isCycle: true
+                    }
+                ];
+
+                const oneWayRoutes = [
+                    { 
+                        path: "龍城 → 龍穴 → 精靈之森 → 珊瑚區", 
+                        avgYield: 22.8, // (30.7 + 14.5 + 23.3) / 3
+                        segments: 4,
+                        segmentYields: [30.7, 14.5, 23.3],
+                        isCycle: false
+                    },
+                    { 
+                        path: "魔物之森 → 鬼島 → 黑暗森林", 
+                        avgYield: 27.6, // (32.6 + 22.6) / 2
+                        segments: 3,
+                        segmentYields: [32.6, 22.6],
+                        isCycle: false
+                    },
+                    { 
+                        path: "飛龍山 → 綠洲城 → 舊都遺址 → 珊瑚區", 
+                        avgYield: 18.2, // (29.4 + 9.1 + 16.1) / 3
+                        segments: 4,
+                        segmentYields: [29.4, 9.1, 16.1],
+                        isCycle: false
+                    }
+                ];
+
+                let html = '';
+
+                // 1. 所有分段 ≥ 26% 推薦路線
+                html += '<div class="route-section">';
+                html += '<h4>⭐ 推薦路線 (所有分段 ≥ 26%)</h4>';
                 html += '<table>';
-                html += '<tr><th>排名</th><th>路徑</th><th>總收益率</th><th>分段收益</th></tr>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th></tr>';
                 
-                bestRoutes.forEach((route, index) => {
-                    const yieldClass = route.totalYield > 50 ? 'yield-high' : 'yield-medium';
+                allRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 20 ? 'yield-high' : 'yield-medium';
                     const segmentDetails = route.segmentYields.map(yield => `${yield.toFixed(1)}%`).join(' • ');
                     
                     html += `<tr>
                         <td>${index + 1}</td>
                         <td class="route-path">${route.path} <span class="segment-count">${route.segments}段</span></td>
-                        <td class="${yieldClass}">${route.totalYield.toFixed(1)}%</td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
                         <td class="route-details">${segmentDetails}</td>
                     </tr>`;
                 });
-                
                 html += '</table>';
+                html += '</div>';
+
+                // 2. 循環路線
+                html += '<div class="route-section">';
+                html += '<h4>🔁 循環路線</h4>';
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th></tr>';
+                
+                cycleRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 15 ? 'yield-high' : 'yield-medium';
+                    const segmentDetails = route.segmentYields.map(yield => `${yield.toFixed(1)}%`).join(' • ');
+                    
+                    html += `<tr>
+                        <td>${index + 1}</td>
+                        <td class="route-path">${route.path} <span class="cycle-indicator">🔁</span> <span class="segment-count">${route.segments}段</span></td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
+                        <td class="route-details">${segmentDetails}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                html += '</div>';
+
+                // 3. 單程路線
+                html += '<div class="route-section">';
+                html += '<h4>➡️ 單程路線</h4>';
+                html += '<table>';
+                html += '<tr><th>排名</th><th>路徑</th><th>平均收益</th><th>分段收益</th></tr>';
+                
+                oneWayRoutes.forEach((route, index) => {
+                    const yieldClass = route.avgYield > 20 ? 'yield-high' : 'yield-medium';
+                    const segmentDetails = route.segmentYields.map(yield => `${yield.toFixed(1)}%`).join(' • ');
+                    
+                    html += `<tr>
+                        <td>${index + 1}</td>
+                        <td class="route-path">${route.path} <span class="segment-count">${route.segments}段</span></td>
+                        <td class="${yieldClass}">${route.avgYield.toFixed(1)}%</td>
+                        <td class="route-details">${segmentDetails}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                html += '</div>';
+
+                // 計算說明
                 html += '<div style="margin-top: 15px; padding: 10px; background: #f8f9fa; border-radius: 5px;">';
                 html += '<strong>計算說明：</strong><br>';
+                html += '• <strong>平均收益</strong> = (所有分段收益率總和) ÷ 地點數量<br>';
                 html += '• 只顯示所有分段收益率 ≥ 26% 的路線<br>';
                 html += '• 分段收益顯示每個貿易段的個別收益率<br>';
-                html += '• 總收益率為複利計算結果';
+                html += '• 循環路線：起點和終點相同<br>';
+                html += '• 單程路線：起點和終點不同';
                 html += '</div>';
                 
                 resultDiv.innerHTML = html;
