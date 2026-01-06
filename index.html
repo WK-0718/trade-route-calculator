@@ -1559,37 +1559,64 @@
         function dfs(currentPath, currentSegments, currentLocation, currentItem, depth) {
             if (depth >= MAX_SEGMENTS) return;
             
-            // 在當前地點賣出上一站的物品（收益率）
-            const sellPrice = currentLocation.sellPrice;
-            const buyPrice = currentLocation.buyPrice;
-            const yieldRate = ((sellPrice - buyPrice) / buyPrice) * 100;
+            let yieldRate = 0;
+            let newSegment;
             
-            // 創建新的路線段（第一個地點只有買入，從第二個地點開始有賣出）
-            const newSegment = {
-                location: currentLocation.name,
-                action: depth === 0 ? '買入' : '賣出並買入',
-                fromItem: currentItem,
-                toItem: currentLocation.buyItem,
-                yieldRate: yieldRate,
-                sellPrice: sellPrice,
-                buyPrice: buyPrice
-            };
+            if (depth === 0) {
+                // 第一個地點：只買入，不賣出
+                newSegment = {
+                    location: currentLocation.name,
+                    action: '買入',
+                    fromItem: null,
+                    toItem: currentLocation.buyItem,
+                    yieldRate: 0, // 第一個地點沒有收益率
+                    sellPrice: 0,
+                    buyPrice: currentLocation.buyPrice
+                };
+            } else {
+                // 後續地點：賣出上一站的物品並買入新物品
+                const sellPrice = currentLocation.sellPrice;
+                const buyPrice = currentLocation.buyPrice;
+                yieldRate = ((sellPrice - buyPrice) / buyPrice) * 100;
+                
+                newSegment = {
+                    location: currentLocation.name,
+                    action: '賣出並買入',
+                    fromItem: currentItem,
+                    toItem: currentLocation.buyItem,
+                    yieldRate: yieldRate,
+                    sellPrice: sellPrice,
+                    buyPrice: buyPrice
+                };
+            }
             
             const newPath = [...currentPath, currentLocation.name];
             const newSegments = [...currentSegments, newSegment];
             
-            // 計算總收益率
-            const totalYield = newSegments.reduce((sum, seg) => sum + seg.yieldRate, 0);
-            const avgYield = totalYield / newSegments.length;
+            // 計算總收益率（跳過第一個地點，因為它沒有收益率）
+            const segmentsWithYield = depth === 0 ? [] : newSegments.slice(1);
+            const totalYield = segmentsWithYield.reduce((sum, seg) => sum + seg.yieldRate, 0);
+            const avgYield = segmentsWithYield.length > 0 ? totalYield / segmentsWithYield.length : 0;
             
             // 檢查是否形成循環（回到起始物品）
             const isCycle = newSegments.length >= 2 && 
                            currentLocation.buyItem === newSegments[0].toItem;
             
-            // 檢查是否是有效路線（所有分段收益率 ≥ MIN_SEGMENT_YIELD）
-            const isValid = newSegments.every(seg => seg.yieldRate >= MIN_SEGMENT_YIELD);
+            // 檢查是否是有效路線（所有有收益的分段收益率 ≥ MIN_SEGMENT_YIELD）
+            const segmentsToCheck = depth === 0 ? [] : newSegments.slice(1);
+            const isValid = segmentsToCheck.length === 0 || 
+                           segmentsToCheck.every(seg => seg.yieldRate >= MIN_SEGMENT_YIELD);
             
-            if (isValid && newSegments.length > 0) {
+            // 避免單地點路線（只有買入沒有賣出）
+            const hasTrading = depth > 0; // 至少有一個賣出操作
+            
+            if (isValid && hasTrading) {
+                // 構建物品流向
+                let itemFlow = newSegments[0].toItem;
+                for (let i = 1; i < newSegments.length; i++) {
+                    itemFlow += ` → ${newSegments[i].toItem}`;
+                }
+                
                 allRoutes.push({
                     path: newPath,
                     segments: newSegments,
@@ -1605,7 +1632,8 @@
                     startItem: newSegments[0].toItem,
                     endItem: currentLocation.buyItem,
                     totalYield: totalYield,
-                    startLocation: newPath[0]  // 添加起點名稱
+                    startLocation: newPath[0],
+                    itemFlow: itemFlow
                 });
             }
             
@@ -1629,9 +1657,10 @@
 
     console.log(`📍 生成 ${allRoutes.length} 條路線`);
 
-    // 3. 過濾和排序
+    // 3. 過濾和排序（至少需要2個地點才有意義）
     const validRoutes = allRoutes.filter(route => 
-        route.segments.every(segment => segment.yieldRate >= MIN_SEGMENT_YIELD)
+        route.path.length >= 2 && // 至少2個地點
+        route.segments.slice(1).every(segment => segment.yieldRate >= MIN_SEGMENT_YIELD) // 所有交易段收益率達標
     );
 
     const sortedRoutes = validRoutes.sort((a, b) => b.avgYield - a.avgYield);
