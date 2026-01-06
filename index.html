@@ -1556,35 +1556,49 @@
     // 2.1 從每個地點作為起點開始（在該地點買入物品）
     Object.values(locations).forEach(startLocation => {
         // 深度優先搜索，最多7段
-        function dfs(currentPath, currentSegments, currentLocation, currentItem, depth, visited) {
+        function dfs(currentPath, currentSegments, currentLocation, currentItem, depth) {
             if (depth >= MAX_SEGMENTS) return;
             
-            // 檢查當前地點是否已在路徑中（防止重複）
-            if (visited.has(currentLocation.name) && depth > 0) {
-                return; // 已訪問過的地點，跳過
-            }
-            
-            let yieldRate = 0;
-            let newSegment;
-            
+            // 如果是第一個地點，只買入
             if (depth === 0) {
-                // 第一個地點：只買入，不賣出
-                newSegment = {
+                // 創建第一個地點的段（只買入）
+                const firstSegment = {
                     location: currentLocation.name,
                     action: '買入',
                     fromItem: null,
                     toItem: currentLocation.buyItem,
-                    yieldRate: 0, // 第一個地點沒有收益率
+                    yieldRate: 0,
                     sellPrice: 0,
                     buyPrice: currentLocation.buyPrice
                 };
+                
+                const newPath = [currentLocation.name];
+                const newSegments = [firstSegment];
+                
+                // 繼續搜索下一個地點
+                if (depth < MAX_SEGMENTS - 1) {
+                    Object.values(locations).forEach(nextLocation => {
+                        // 確保不是同一個地點，且下一個地點能賣出當前買入的物品
+                        if (nextLocation.name !== currentLocation.name &&
+                            nextLocation.sellItem === currentLocation.buyItem) {
+                            
+                            dfs(newPath, newSegments, nextLocation, currentLocation.buyItem, depth + 1);
+                        }
+                    });
+                }
             } else {
                 // 後續地點：賣出上一站的物品並買入新物品
+                // 檢查當前地點是否已在路徑中
+                if (currentPath.includes(currentLocation.name)) {
+                    return; // 已訪問過的地點，跳過
+                }
+                
                 const sellPrice = currentLocation.sellPrice;
                 const buyPrice = currentLocation.buyPrice;
-                yieldRate = ((sellPrice - buyPrice) / buyPrice) * 100;
+                const yieldRate = ((sellPrice - buyPrice) / buyPrice) * 100;
                 
-                newSegment = {
+                // 創建新的路線段
+                const newSegment = {
                     location: currentLocation.name,
                     action: '賣出並買入',
                     fromItem: currentItem,
@@ -1593,76 +1607,65 @@
                     sellPrice: sellPrice,
                     buyPrice: buyPrice
                 };
-            }
-            
-            const newPath = [...currentPath, currentLocation.name];
-            const newSegments = [...currentSegments, newSegment];
-            const newVisited = new Set(visited);
-            newVisited.add(currentLocation.name);
-            
-            // 計算總收益率（跳過第一個地點，因為它沒有收益率）
-            const segmentsWithYield = depth === 0 ? [] : newSegments.slice(1);
-            const totalYield = segmentsWithYield.reduce((sum, seg) => sum + seg.yieldRate, 0);
-            const avgYield = segmentsWithYield.length > 0 ? totalYield / segmentsWithYield.length : 0;
-            
-            // 檢查是否形成循環（回到起始物品）
-            const isCycle = newSegments.length >= 2 && 
-                           currentLocation.buyItem === newSegments[0].toItem;
-            
-            // 檢查是否是有效路線（所有有收益的分段收益率 ≥ MIN_SEGMENT_YIELD）
-            const segmentsToCheck = depth === 0 ? [] : newSegments.slice(1);
-            const isValid = segmentsToCheck.length === 0 || 
-                           segmentsToCheck.every(seg => seg.yieldRate >= MIN_SEGMENT_YIELD);
-            
-            // 避免單地點路線（只有買入沒有賣出）
-            const hasTrading = depth > 0; // 至少有一個賣出操作
-            
-            if (isValid && hasTrading) {
-                // 構建物品流向
-                let itemFlow = newSegments[0].toItem;
-                for (let i = 1; i < newSegments.length; i++) {
-                    itemFlow += ` → ${newSegments[i].toItem}`;
+                
+                const newPath = [...currentPath, currentLocation.name];
+                const newSegments = [...currentSegments, newSegment];
+                
+                // 計算總收益率（跳過第一個買入段）
+                const tradingSegments = newSegments.slice(1);
+                const totalYield = tradingSegments.reduce((sum, seg) => sum + seg.yieldRate, 0);
+                const avgYield = tradingSegments.length > 0 ? totalYield / tradingSegments.length : 0;
+                
+                // 檢查是否是有效路線（所有交易段收益率 ≥ MIN_SEGMENT_YIELD）
+                const isValid = tradingSegments.every(seg => seg.yieldRate >= MIN_SEGMENT_YIELD);
+                
+                if (isValid && tradingSegments.length > 0) {
+                    // 構建物品流向
+                    let itemFlow = newSegments[0].toItem;
+                    for (let i = 1; i < newSegments.length; i++) {
+                        itemFlow += ` → ${newSegments[i].toItem}`;
+                    }
+                    
+                    // 檢查是否循環（最後買入的物品等於第一個買入的物品）
+                    const isCycle = newSegments.length >= 2 && 
+                                   currentLocation.buyItem === newSegments[0].toItem;
+                    
+                    allRoutes.push({
+                        path: newPath,
+                        segments: newSegments,
+                        avgYield: avgYield,
+                        segmentCount: newSegments.length,
+                        segmentYields: newSegments.map(seg => seg.yieldRate),
+                        segmentDetails: newSegments.map(seg => {
+                            return seg.action === '買入' ? 
+                                `買入 ${seg.toItem}` : 
+                                `${seg.yieldRate.toFixed(1)}%`;
+                        }),
+                        isCycle: isCycle,
+                        startItem: newSegments[0].toItem,
+                        endItem: currentLocation.buyItem,
+                        totalYield: totalYield,
+                        startLocation: newPath[0],
+                        itemFlow: itemFlow
+                    });
                 }
                 
-                allRoutes.push({
-                    path: newPath,
-                    segments: newSegments,
-                    avgYield: avgYield,
-                    segmentCount: newSegments.length,
-                    segmentYields: newSegments.map(seg => seg.yieldRate),
-                    segmentDetails: newSegments.map(seg => {
-                        return seg.action === '買入' ? 
-                            `買入 ${seg.toItem}` : 
-                            `${seg.fromItem}→${seg.toItem} ${seg.yieldRate.toFixed(1)}%`;
-                    }),
-                    isCycle: isCycle,
-                    startItem: newSegments[0].toItem,
-                    endItem: currentLocation.buyItem,
-                    totalYield: totalYield,
-                    startLocation: newPath[0],
-                    itemFlow: itemFlow
-                });
-            }
-            
-            // 繼續搜索（最多7段）
-            if (depth < MAX_SEGMENTS - 1) {
-                // 找到下一個可以賣出當前買入物品的地點
-                Object.values(locations).forEach(nextLocation => {
-                    // 確保下一個地點未被訪問過，並且能賣出當前買入的物品
-                    if (!newVisited.has(nextLocation.name) &&
-                        nextLocation.sellItem === currentLocation.buyItem) {
-                        
-                        dfs(newPath, newSegments, nextLocation, currentLocation.buyItem, depth + 1, newVisited);
-                    }
-                });
+                // 繼續搜索（最多7段）
+                if (depth < MAX_SEGMENTS - 1) {
+                    Object.values(locations).forEach(nextLocation => {
+                        // 確保下一個地點未被訪問過，並且能賣出當前買入的物品
+                        if (!newPath.includes(nextLocation.name) &&
+                            nextLocation.sellItem === currentLocation.buyItem) {
+                            
+                            dfs(newPath, newSegments, nextLocation, currentLocation.buyItem, depth + 1);
+                        }
+                    });
+                }
             }
         }
         
         // 從起始地點開始搜索（在起始地點買入物品）
-        // 使用Set來跟踪已訪問的地點
-        const visited = new Set();
-        visited.add(startLocation.name);
-        dfs([startLocation.name], [], startLocation, null, 0, visited);
+        dfs([], [], startLocation, null, 0);
     });
 
     console.log(`📍 生成 ${allRoutes.length} 條路線`);
