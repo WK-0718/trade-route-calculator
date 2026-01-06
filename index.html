@@ -1556,8 +1556,13 @@
     // 2.1 從每個地點作為起點開始（在該地點買入物品）
     Object.values(locations).forEach(startLocation => {
         // 深度優先搜索，最多7段
-        function dfs(currentPath, currentSegments, currentLocation, currentItem, depth) {
+        function dfs(currentPath, currentSegments, currentLocation, currentItem, depth, visited) {
             if (depth >= MAX_SEGMENTS) return;
+            
+            // 檢查當前地點是否已在路徑中（防止重複）
+            if (visited.has(currentLocation.name) && depth > 0) {
+                return; // 已訪問過的地點，跳過
+            }
             
             let yieldRate = 0;
             let newSegment;
@@ -1592,6 +1597,8 @@
             
             const newPath = [...currentPath, currentLocation.name];
             const newSegments = [...currentSegments, newSegment];
+            const newVisited = new Set(visited);
+            newVisited.add(currentLocation.name);
             
             // 計算總收益率（跳過第一個地點，因為它沒有收益率）
             const segmentsWithYield = depth === 0 ? [] : newSegments.slice(1);
@@ -1641,18 +1648,21 @@
             if (depth < MAX_SEGMENTS - 1) {
                 // 找到下一個可以賣出當前買入物品的地點
                 Object.values(locations).forEach(nextLocation => {
-                    if (nextLocation.name !== currentLocation.name && 
-                        !newPath.includes(nextLocation.name) &&
+                    // 確保下一個地點未被訪問過，並且能賣出當前買入的物品
+                    if (!newVisited.has(nextLocation.name) &&
                         nextLocation.sellItem === currentLocation.buyItem) {
                         
-                        dfs(newPath, newSegments, nextLocation, currentLocation.buyItem, depth + 1);
+                        dfs(newPath, newSegments, nextLocation, currentLocation.buyItem, depth + 1, newVisited);
                     }
                 });
             }
         }
         
         // 從起始地點開始搜索（在起始地點買入物品）
-        dfs([startLocation.name], [], startLocation, null, 0);
+        // 使用Set來跟踪已訪問的地點
+        const visited = new Set();
+        visited.add(startLocation.name);
+        dfs([startLocation.name], [], startLocation, null, 0, visited);
     });
 
     console.log(`📍 生成 ${allRoutes.length} 條路線`);
