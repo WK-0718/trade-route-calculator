@@ -1562,7 +1562,9 @@
             // 如果是第一個地點
             if (depth === 0) {
                 // 計算第一個地點的收益率
-                const yieldRate = ((startLocation.sellPrice - startLocation.buyPrice) / startLocation.buyPrice) * 100;
+                const buyPriceNum = parseInt(startLocation.buyPrice) || 0;
+                const sellPriceNum = parseInt(startLocation.sellPrice) || 0;
+                const yieldRate = ((sellPriceNum - buyPriceNum) / buyPriceNum) * 100;
                 
                 // 第一個地點：買入並賣出
                 const firstSegment = {
@@ -1570,8 +1572,8 @@
                     action: '買入並賣出',
                     buyItem: startLocation.buyItem,
                     sellItem: startLocation.sellItem,
-                    buyPrice: startLocation.buyPrice,
-                    sellPrice: startLocation.sellPrice,
+                    buyPrice: buyPriceNum,        // 使用轉換後的數字
+                    sellPrice: sellPriceNum,       // 使用轉換後的數字
                     yieldRate: yieldRate
                 };
                 
@@ -1600,9 +1602,9 @@
                     return; // 已訪問過的地點，跳過
                 }
                 
-                const sellPrice = currentLocation.sellPrice;
-                const buyPrice = currentLocation.buyPrice;
-                const yieldRate = ((sellPrice - buyPrice) / buyPrice) * 100;
+                const sellPriceNum = parseInt(currentLocation.sellPrice) || 0;
+                const buyPriceNum = parseInt(currentLocation.buyPrice) || 0;
+                const yieldRate = ((sellPriceNum - buyPriceNum) / buyPriceNum) * 100;
                 
                 // 創建新的路線段
                 const newSegment = {
@@ -1610,8 +1612,8 @@
                     action: '賣出並買入',
                     sellItem: currentSellItem, // 賣出的物品
                     buyItem: currentLocation.buyItem, // 買入的物品
-                    sellPrice: sellPrice,
-                    buyPrice: buyPrice,
+                    sellPrice: sellPriceNum,   // 使用轉換後的數字
+                    buyPrice: buyPriceNum,     // 使用轉換後的數字
                     yieldRate: yieldRate
                 };
                 
@@ -1647,7 +1649,7 @@
                         segmentCount: newSegments.length,
                         segmentYields: newSegments.map(seg => seg.yieldRate),
                         segmentDetails: newSegments.map(seg => {
-                            return `${seg.sellItem}→${seg.buyItem} ${seg.yieldRate.toFixed(1)}%`;
+                            return `${seg.yieldRate.toFixed(1)}%`;
                         }),
                         isCycle: isCycle,
                         startItem: newSegments[0].sellItem, // 起始物品W
