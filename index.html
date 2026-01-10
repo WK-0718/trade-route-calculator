@@ -1692,7 +1692,7 @@ function displayResultsCorrected(routes) {
         html += '顯示前 ' + Math.min(routes.allRoutes.length, 100) + ' 條最佳路線（按平均收益率排序）';
         html += '</div>';
         html += '<table>';
-        html += '<tr><th>排名</th><th>起始地點</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th><th>類型</th></tr>';
+        html += '<tr><th>排名</th><th>起始地點</th><th>終點</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th><th>類型</th></tr>';
         
         routes.allRoutes.forEach((route, index) => {
             const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
@@ -1707,6 +1707,7 @@ function displayResultsCorrected(routes) {
             html += `<tr>
                 <td><strong>${index + 1}</strong></td>
                 <td class="route-details"><strong>${route.startLocation}</strong></td>
+                <td class="route-details"><strong>${route.endLocation}</strong></td> <!-- 終點顯示在這裡 -->
                 <td class="route-path">${pathDisplay} <span class="segment-count">${route.segmentCount}段</span></td>
                 <td class="${yieldClass}">${route.avgYield.toFixed(2)}%</td>
                 <td class="route-details">${segmentDisplay}</td>
@@ -1719,48 +1720,16 @@ function displayResultsCorrected(routes) {
     }
     html += '</div>';
 
-    // 2. 特別顯示沉船區路線
-    const chenchuanRoutes = routes.allRoutes.filter(route => 
-        route.startLocation === '沉船區'
-    );
-    
-    if (chenchuanRoutes.length > 0) {
-        html += '<div class="route-section">';
-        html += '<h4>🔍 沉船區路線詳細分析</h4>';
-        html += '<table>';
-        html += '<tr><th>路徑</th><th>分段收益%</th><th>平均收益</th><th>計算驗證</th></tr>';
-        
-        chenchuanRoutes.forEach(route => {
-            const segmentDisplay = route.segmentDetails.join(' → ');
-            
-            // 計算驗證
-            let verification = '<div style="font-size: 11px;">';
-            route.segments.forEach((seg, i) => {
-                verification += `${i+1}. ${seg.location}: ${seg.buyPrice}%→${seg.sellPrice}%<br>`;
-            });
-            verification += '</div>';
-            
-            html += `<tr>
-                <td class="route-path">${route.path.join(' → ')}</td>
-                <td class="route-details">${segmentDisplay}</td>
-                <td class="yield-high">${route.avgYield.toFixed(2)}%</td>
-                <td class="route-details">${verification}</td>
-            </tr>`;
-        });
-        html += '</table>';
-        html += '</div>';
-    }
-
-    // 3. 計算說明
+    // 2. 計算說明
     html += '<div style="margin-top: 25px; padding: 20px; background: linear-gradient(135deg, #f8f9fa, #e9ecef); border-radius: 10px; border-left: 5px solid #4a86e8;">';
     html += '<strong>📋 貿易邏輯說明：</strong><br><br>';
-    html += '• <strong>循環路線定義</strong>：最後地點買入的物品 = 第一個地點賣出的物品<br>';
-    html += '• <strong>示例</strong>：A(賣W買X) → B(賣X買Y) → C(賣Y買W) 🔁<br>';
-    html += '• <strong>顯示數量</strong>：推薦路線顯示前100條，循環和單程路線各顯示前50條<br>';
-    html += '• <strong>排序方式</strong>：按平均收益率從高到低排序<br>';
-    html += '• <strong>收益率計算</strong>：收益率 = (賣出價格% - 買入價格%) ÷ 買入價格% × 100<br>';
-    html += '• 基於您輸入的實際價格數據計算<br>';
-    html += '• 計算原理：在A地賣出W買入X，到B地賣出X買入Y，再到C地賣出Y買入W...';
+    html += '1. 在A地點：買入物品X，賣出物品W<br>';
+    html += '2. 到B地點：賣出物品X，買入物品Y<br>';
+    html += '3. 到C地點：賣出物品Y，買入物品Z<br><br>';
+    html += '<strong>收益率計算公式：</strong><br>';
+    html += '• 單一分段收益率 = (賣出價格% ÷ 買入價格% - 1) × 100<br>';
+    html += '• 路線平均收益率 = 所有分段收益率的平均值<br>';
+    html += '• 只顯示分段收益率 ≥ 26% 的路線<br>';
     html += '</div>';
 
     document.getElementById('calculation-result').innerHTML = html;
