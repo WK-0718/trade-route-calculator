@@ -1652,7 +1652,8 @@ function displayResultsCorrected(routes) {
         html += '顯示前 ' + Math.min(routes.allRoutes.length, 100) + ' 條最佳路線（按平均收益率排序）';
         html += '</div>';
         html += '<table>';
-        html += '<tr><th>排名</th><th>起始地點</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th><th>段數</th><th>類型</th></tr>';
+        // 修改這行：刪除起始地點欄，合併段數和類型
+        html += '<tr><th>排名</th><th colspan="2" style="font-size: 1.2em; padding: 10px; text-align: center;">段數<br>和類型</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th></tr>';
         
         routes.allRoutes.forEach((route, index) => {
             const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
@@ -1664,14 +1665,14 @@ function displayResultsCorrected(routes) {
             // 分段收益
             const segmentDisplay = route.segmentDetails.join(' → ');
             
+            // 修改這部分：刪除起始地點欄，調整欄位順序
             html += `<tr>
                 <td><strong>${index + 1}</strong></td>
-                <td class="route-details"><strong>${route.startLocation}</strong></td>
+                <td><span class="segment-count">${route.segmentCount}段</span></td>
+                <td>${routeType}</td>
                 <td class="route-path">${pathDisplay}</td>
                 <td class="${yieldClass}">${route.avgYield.toFixed(2)}%</td>
                 <td class="route-details">${segmentDisplay}</td>
-                <td><span class="segment-count">${route.segmentCount}段</span></td>
-                <td>${routeType}</td>
             </tr>`;
         });
         html += '</table>';
