@@ -1652,10 +1652,11 @@ function displayResultsCorrected(routes) {
         html += '顯示前 ' + Math.min(routes.allRoutes.length, 100) + ' 條最佳路線（按平均收益率排序）';
         html += '</div>';
         html += '<table>';
-        html += '<tr><th>排名</th><th>起始地點</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th><th>段數</th></tr>';
+        html += '<tr><th>排名</th><th>起始地點</th><th>完整路徑</th><th>平均收益</th><th>分段收益%</th><th>段數</th><th>類型</th></tr>';
         
         routes.allRoutes.forEach((route, index) => {
             const yieldClass = route.avgYield > 30 ? 'yield-high' : 'yield-medium';
+            const routeType = route.isCycle ? '🔁 循環' : '➡️ 單程';
             
             // 完整路徑（包含終點）
             const pathDisplay = route.path.join(' → ');
@@ -1670,6 +1671,7 @@ function displayResultsCorrected(routes) {
                 <td class="${yieldClass}">${route.avgYield.toFixed(2)}%</td>
                 <td class="route-details">${segmentDisplay}</td>
                 <td><span class="segment-count">${route.segmentCount}段</span></td>
+                <td>${routeType}</td>
             </tr>`;
         });
         html += '</table>';
@@ -1685,6 +1687,8 @@ function displayResultsCorrected(routes) {
     html += '• <strong>中間地點</strong>：賣出前一個物品 + 買入新物品（計算賣出收益率）<br>';
     html += '• <strong>終點</strong>：只賣出最後一個物品（計算賣出收益率）<br>';
     html += '• <strong>分段收益率</strong> = (賣出價格% ÷ 當初買入價格% - 1) × 100<br>';
+    html += '• <strong>循環路線</strong>：最後買入的物品可以在起始地點賣出<br>';
+    html += '• <strong>單程路線</strong>：最後買入的物品無法在起始地點賣出<br>';
     html += '</div>';
 
     document.getElementById('calculation-result').innerHTML = html;
